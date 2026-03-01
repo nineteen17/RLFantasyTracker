@@ -1,0 +1,121 @@
+[
+  {
+    "id": 500011,
+    "full_name": "Brisbane Broncos",
+    "name": "Broncos",
+    "short_name": "BRI",
+    "avatar_version": 1
+  },
+  {
+    "id": 500010,
+    "full_name": "Canterbury-Bankstown Bulldogs",
+    "name": "Bulldogs",
+    "short_name": "CBY",
+    "avatar_version": 1
+  },
+  {
+    "id": 500012,
+    "full_name": "North Queensland Cowboys",
+    "name": "Cowboys",
+    "short_name": "NQL",
+    "avatar_version": 1
+  },
+  {
+    "id": 500723,
+    "full_name": "Dolphins",
+    "name": "Dolphins",
+    "short_name": "DOL",
+    "avatar_version": 1
+  },
+  {
+    "id": 500022,
+    "full_name": "St. George Illawarra Dragons",
+    "name": "Dragons",
+    "short_name": "SGI",
+    "avatar_version": 1
+  },
+  {
+    "id": 500031,
+    "full_name": "Parramatta Eels",
+    "name": "Eels",
+    "short_name": "PAR",
+    "avatar_version": 1
+  },
+  {
+    "id": 500003,
+    "full_name": "Newcastle Knights",
+    "name": "Knights",
+    "short_name": "NEW",
+    "avatar_version": 1
+  },
+  {
+    "id": 500014,
+    "full_name": "Penrith Panthers",
+    "name": "Panthers",
+    "short_name": "PEN",
+    "avatar_version": 1
+  },
+  {
+    "id": 500005,
+    "full_name": "South Sydney Rabbitohs",
+    "name": "Rabbitohs",
+    "short_name": "SOU",
+    "avatar_version": 1
+  },
+  {
+    "id": 500013,
+    "full_name": "Canberra Raiders",
+    "name": "Raiders",
+    "short_name": "CAN",
+    "avatar_version": 1
+  },
+  {
+    "id": 500001,
+    "full_name": "Sydney Roosters",
+    "name": "Roosters",
+    "short_name": "SYD",
+    "avatar_version": 1
+  },
+  {
+    "id": 500002,
+    "full_name": "Manly-Warringah Sea Eagles",
+    "name": "Sea Eagles",
+    "short_name": "MAN",
+    "avatar_version": 1
+  },
+  {
+    "id": 500028,
+    "full_name": "Cronulla-Sutherland Sharks",
+    "name": "Sharks",
+    "short_name": "CRO",
+    "avatar_version": 1
+  },
+  {
+    "id": 500021,
+    "full_name": "Melbourne Storm",
+    "name": "Storm",
+    "short_name": "MEL",
+    "avatar_version": 1
+  },
+  {
+    "id": 500023,
+    "full_name": "Wests Tigers",
+    "name": "Tigers",
+    "short_name": "WST",
+    "avatar_version": 1
+  },
+  {
+    "id": 500004,
+    "full_name": "Gold Coast Titans",
+    "name": "Titans",
+    "short_name": "GLD",
+    "avatar_version": 1
+  },
+  {
+    "id": 500032,
+    "full_name": "New Zealand Warriors",
+    "name": "Warriors",
+    "short_name": "WAR",
+    "avatar_version": 1
+  }
+]

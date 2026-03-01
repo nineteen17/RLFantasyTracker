@@ -1,0 +1,41 @@
+// https://fantasy.nrl.com/data/nrl/coach/players/100006817.json
+
+{
+  "proj_prices": { "2": 277085, "3": 321721, "4": 372231 },
+  "proj_scores": { "1": 44, "2": 44, "3": 44 },
+  "break_evens": { "1": 19, "2": -1, "3": -16 },
+  "be_pct": { "1": 1, "2": 1, "3": 1 },
+  "venues": {
+    "500037": {
+      "avg": 69,
+      "low": 69,
+      "high": 69,
+      "games": 1,
+      "last_3": { "0": 69 }
+    }
+  },
+  "opponents": {
+    "500723": {
+      "avg": 69,
+      "low": 69,
+      "high": 69,
+      "games": 1,
+      "last_3": { "0": 69 }
+    }
+  },
+  "transfers": {},
+  "consistency": 0,
+  "total_tog": 55,
+  "in_20_avg": 0,
+  "out_20_avg": 0,
+  "last_3_proj_avg": 0,
+  "last_3_tog_avg": 55,
+  "last_5_tog_avg": 55,
+  "draft_selections": 2104,
+  "draft_selections_info": { "c": 1.33, "vc": 0.88, "bc": 13.23, "res": 12.39 },
+  "draft_owned_by": 68.25,
+  "draft_owned_by_change": -3.46,
+  "draft_owned_by_previous": 71.71,
+  "position_ranks": { "3": 0 },
+  "last_season_scores": { "27": 69 }
+}

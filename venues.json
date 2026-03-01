@@ -1,0 +1,266 @@
+[
+  {
+    "id": 50000,
+    "name": "TBA",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500001,
+    "name": "Allianz Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500002,
+    "name": "Accor Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500005,
+    "name": "4 Pines Park",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500007,
+    "name": "Sharks Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500008,
+    "name": "CommBank Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500010,
+    "name": "Suncorp Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500011,
+    "name": "Go Media Stadium",
+    "short_name": "",
+    "timezone": "Pacific\/Auckland"
+  },
+  {
+    "id": 500019,
+    "name": "WIN Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500023,
+    "name": "AAMI Park",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500024,
+    "name": "McDonald Jones Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500029,
+    "name": "Barlow Park",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500037,
+    "name": "Kayo Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500040,
+    "name": "BlueBet Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500042,
+    "name": "Belmore Sports Ground",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500046,
+    "name": "Cbus Super Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500056,
+    "name": "Campbelltown Sports Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500062,
+    "name": "Sky Stadium",
+    "short_name": "",
+    "timezone": "Pacific\/Auckland"
+  },
+  {
+    "id": 500068,
+    "name": "Sydney Cricket Ground",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500069,
+    "name": "Leichhardt Oval",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500071,
+    "name": "GIO Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500073,
+    "name": "Netstrata Jubilee Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500076,
+    "name": "Marvel Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500077,
+    "name": "Industree Group Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500080,
+    "name": "Sunshine Coast Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500085,
+    "name": "FMG Stadium Waikato",
+    "short_name": "",
+    "timezone": "Pacific\/Auckland"
+  },
+  {
+    "id": 500115,
+    "name": "TIO Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Darwin"
+  },
+  {
+    "id": 500117,
+    "name": "Glen Willow Oval",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500118,
+    "name": "Carrington Park",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500147,
+    "name": "McLean Park",
+    "short_name": "",
+    "timezone": "Pacific\/Auckland"
+  },
+  {
+    "id": 500164,
+    "name": "McDonalds Park",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500178,
+    "name": "Scully Park",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500189,
+    "name": "Salter Oval",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500448,
+    "name": "HBF Park",
+    "short_name": "",
+    "timezone": "Australia\/Perth"
+  },
+  {
+    "id": 500452,
+    "name": "Optus Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Perth"
+  },
+  {
+    "id": 500571,
+    "name": "C.ex Coffs International Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 500692,
+    "name": "Queensland Country Bank Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500860,
+    "name": "Apollo Projects Stadium",
+    "short_name": "",
+    "timezone": "Pacific\/Auckland"
+  },
+  {
+    "id": 500862,
+    "name": "The Gabba",
+    "short_name": "",
+    "timezone": "Australia\/Brisbane"
+  },
+  {
+    "id": 500955,
+    "name": "Allegiant Stadium",
+    "short_name": "",
+    "timezone": "America\/Los_Angeles"
+  },
+  {
+    "id": 500971,
+    "name": "TBA",
+    "short_name": "",
+    "timezone": "Australia\/NSW"
+  },
+  {
+    "id": 501017,
+    "name": "Shark Park",
+    "short_name": "",
+    "timezone": "Australia\/Sydney"
+  },
+  {
+    "id": 501018,
+    "name": "Optus Stadium",
+    "short_name": "",
+    "timezone": "Australia\/Perth"
+  },
+  {
+    "id": 501043,
+    "name": "One NZ Stadium",
+    "short_name": "",
+    "timezone": "Pacific\/Auckland"
+  }
+]
