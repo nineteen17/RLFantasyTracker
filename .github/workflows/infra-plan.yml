@@ -32,8 +32,20 @@ jobs:
       - name: Terraform validate
         run: terraform validate
 
+      - name: Check DigitalOcean token
+        id: token_check
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        run: |
+          if [ -n "$DIGITALOCEAN_TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+            echo "DIGITALOCEAN_TOKEN is not set; skipping terraform plan step."
+          fi
+
       - name: Terraform plan
-        if: ${{ secrets.DIGITALOCEAN_TOKEN != '' }}
+        if: ${{ steps.token_check.outputs.has_token == 'true' }}
         env:
           TF_VAR_do_token: ${{ secrets.DIGITALOCEAN_TOKEN }}
         run: |
