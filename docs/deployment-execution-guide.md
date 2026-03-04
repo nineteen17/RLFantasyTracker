@@ -197,13 +197,16 @@ This publishes:
 
 ## 9) Deploy to Production
 
-Run workflow:
+Default path (automated):
 
-- `Deploy Production` (`.github/workflows/deploy-prod.yml`)
+- Push to `main` triggers `Docker Release`.
+- After successful `Docker Release`, `Deploy Production` auto-runs using `sha-<commit>`.
+- This keeps production on an immutable tag tied to the built commit.
 
-Input:
+Manual path (rollback/hotfix):
 
-- `image_tag` = `sha-<commit>`
+- Run `Deploy Production` (`.github/workflows/deploy-prod.yml`) via workflow dispatch.
+- Provide `image_tag = sha-<previous_or_target_commit>`.
 
 What it does:
 

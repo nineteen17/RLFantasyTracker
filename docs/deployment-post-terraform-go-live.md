@@ -166,36 +166,33 @@ gh secret set -R nineteen17/RLFantasyTracker -e production DIGITALOCEAN_TOKEN -b
 Run from your local machine:
 
 ```bash
-# 1) Push current code to main
+# 1) Push current code to main (this triggers Docker Release automatically)
 cd /Users/nickririnui/Desktop/RLFantasyTracker
 git add .
 git commit -m "chore: deployment updates" || true
 git push origin main
 
-# 2) Trigger Docker image build/push workflow
-gh workflow run "Docker Release" -R nineteen17/RLFantasyTracker --ref main
-
-# 3) Find latest Docker Release run ID
+# 2) Find latest Docker Release run ID
 gh run list -R nineteen17/RLFantasyTracker --workflow "Docker Release" --limit 1
 
-# 4) Wait for Docker Release to finish
+# 3) Wait for Docker Release to finish
 gh run watch <DOCKER_RELEASE_RUN_ID> -R nineteen17/RLFantasyTracker
 
-# 5) Get exact commit SHA that run built
-SHA=$(gh run view <DOCKER_RELEASE_RUN_ID> -R nineteen17/RLFantasyTracker --json headSha -q .headSha)
-echo "$SHA"
-
-# 6) Trigger production deploy with exact immutable image tag
-gh workflow run "Deploy Production" -R nineteen17/RLFantasyTracker -f image_tag="sha-$SHA"
-
-# 7) Find latest deploy run ID
+# 4) Deploy Production auto-starts after successful Docker Release on main
+#    Find latest deploy run ID
 gh run list -R nineteen17/RLFantasyTracker --workflow "Deploy Production" --limit 1
 
-# 8) Wait for deploy to finish
+# 5) Wait for deploy to finish
 gh run watch <DEPLOY_RUN_ID> -R nineteen17/RLFantasyTracker
 ```
 
-If both runs are successful, continue to verification.
+Manual override (rollback/hotfix):
+
+```bash
+gh workflow run "Deploy Production" -R nineteen17/RLFantasyTracker -f image_tag="sha-<commit_sha>"
+```
+
+If build and deploy runs are successful, continue to verification.
 
 ---
 

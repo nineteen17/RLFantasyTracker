@@ -1,12 +1,15 @@
 name: Deploy Production
 
 on:
+  workflow_run:
+    workflows: ["Docker Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       image_tag:
         description: "Docker image tag to deploy (e.g. sha-<commit>)"
-        required: true
-        default: "latest"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -17,10 +20,32 @@ concurrency:
 
 jobs:
   deploy:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Resolve deploy metadata
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "image_tag=sha-${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "checkout_ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            input_tag="${{ github.event.inputs.image_tag }}"
+            if [ -z "$input_tag" ]; then
+              input_tag="latest"
+            fi
+            echo "image_tag=$input_tag" >> "$GITHUB_OUTPUT"
+            echo "checkout_ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.checkout_ref }}
 
       - name: Sync deploy assets to droplet
         uses: appleboy/scp-action@v0.1.7
@@ -48,7 +73,7 @@ jobs:
 
             cd /opt/rlfantasy
 
-            export IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+            export IMAGE_TAG="${{ steps.meta.outputs.image_tag }}"
             export API_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-api:${IMAGE_TAG}"
             export WEB_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-web:${IMAGE_TAG}"
 
