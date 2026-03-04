@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+.claude
+**/.DS_Store
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/logs
+**/.env
+**/.env.*
+app/api/reports
+tmp

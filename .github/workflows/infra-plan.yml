@@ -1,0 +1,45 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform/envs/prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive ../..
+
+      - name: Terraform init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        if: ${{ secrets.DIGITALOCEAN_TOKEN != '' }}
+        env:
+          TF_VAR_do_token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        run: |
+          terraform plan -input=false \
+            -var='region=syd1' \
+            -var='droplet_size=s-1vcpu-2gb' \
+            -var='ssh_key_fingerprints=[]' \
+            -var='admin_cidrs=["127.0.0.1/32"]' \
+            -var='enable_cloudflare_origin_lock=false'

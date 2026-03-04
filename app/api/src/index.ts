@@ -16,6 +16,10 @@ logger.info(`NODE_ENV=${process.env.NODE_ENV}`);
 
 const NODE_ENV = process.env.NODE_ENV;
 const PORT = Number(process.env.PORT || 5000);
+const ENABLE_SCHEDULER =
+	process.env.ENABLE_SCHEDULER === undefined
+		? true
+		: process.env.ENABLE_SCHEDULER === "true";
 
 (async () => {
 	container.registerInstance(INJECTION_TOKENS.DataSource, db);
@@ -31,12 +35,20 @@ const PORT = Number(process.env.PORT || 5000);
 		};
 		https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
 			logger.info(`Listening on https://localhost:${PORT}`);
-			startScheduler();
+			if (ENABLE_SCHEDULER) {
+				startScheduler();
+			} else {
+				logger.info("Scheduler disabled via ENABLE_SCHEDULER=false");
+			}
 		});
 	} else {
 		app.listen(PORT, "0.0.0.0", () => {
 			logger.info(`Listening on http://localhost:${PORT}`);
-			startScheduler();
+			if (ENABLE_SCHEDULER) {
+				startScheduler();
+			} else {
+				logger.info("Scheduler disabled via ENABLE_SCHEDULER=false");
+			}
 		});
 	}
 })().catch((error: Error) => {

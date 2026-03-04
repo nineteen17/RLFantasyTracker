@@ -1,0 +1,65 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy (e.g. sha-<commit>)"
+        required: true
+        default: "latest"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync deploy assets to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_PRIVATE_KEY }}
+          source: "deploy"
+          target: "/opt/rlfantasy"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            if [ ! -f /opt/rlfantasy/.env ]; then
+              echo "Missing /opt/rlfantasy/.env"
+              exit 1
+            fi
+
+            cd /opt/rlfantasy
+
+            export IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+            export API_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-api:${IMAGE_TAG}"
+            export WEB_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-web:${IMAGE_TAG}"
+
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env pull api worker web
+            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env up -d --remove-orphans
+
+            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env ps
+            APP_DOMAIN="$(grep '^APP_DOMAIN=' /opt/rlfantasy/.env | cut -d '=' -f2-)"
+            API_DOMAIN="$(grep '^API_DOMAIN=' /opt/rlfantasy/.env | cut -d '=' -f2-)"
+            curl -fsS -H "Host: ${APP_DOMAIN}" http://127.0.0.1/ >/dev/null
+            curl -fsS -H "Host: ${API_DOMAIN}" http://127.0.0.1/health >/dev/null
+            docker image prune -f

@@ -30,6 +30,21 @@ ssl/
 # Coverage
 coverage/
 
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+!*.tfvars.example
+
+# Deployment env files
+deploy/compose/.env
+
 # Package manager
 package-lock.json
 
