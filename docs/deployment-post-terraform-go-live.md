@@ -143,7 +143,14 @@ Create production environment (safe to run even if it already exists):
 gh api --method PUT repos/nineteen17/RLFantasyTracker/environments/production
 ```
 
-Set secrets from local machine in repo root:
+Set repository-level secrets (used by `Docker Release` workflow):
+
+```bash
+gh secret set -R nineteen17/RLFantasyTracker DOCKERHUB_USERNAME -b"<dockerhub-username>"
+gh secret set -R nineteen17/RLFantasyTracker DOCKERHUB_TOKEN -b"<dockerhub-token>"
+```
+
+Set production environment secrets (used by `Deploy Production` workflow):
 
 ```bash
 gh secret set -R nineteen17/RLFantasyTracker -e production DROPLET_HOST -b"170.64.251.61"
@@ -158,6 +165,12 @@ Optional (only if running Terraform from GitHub Actions):
 ```bash
 gh secret set -R nineteen17/RLFantasyTracker -e production DIGITALOCEAN_TOKEN -b"<digitalocean-token>"
 ```
+
+Important:
+
+- `Docker Release` reads repository secrets only (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`).
+- `Deploy Production` reads production environment secrets.
+- If Docker Hub secrets are only set with `-e production`, `Docker Release` login will fail.
 
 ---
 

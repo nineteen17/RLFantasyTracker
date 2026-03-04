@@ -180,15 +180,20 @@ Have these values ready (not in git):
 
 ---
 
-## Step 10) Add GitHub Secrets (Production Environment)
+## Step 10) Add GitHub Secrets (Repo + Production Environment)
 
-Add these in GitHub `production` environment secrets:
+Add these as repository secrets (used by `Docker Release` workflow):
 
 - `DOCKERHUB_USERNAME`
 - `DOCKERHUB_TOKEN`
-- `DIGITALOCEAN_TOKEN`
+
+Add these in GitHub `production` environment secrets (used by `Deploy Production` workflow):
+
 - `DROPLET_USER` (usually `deploy`)
 - `DROPLET_SSH_PRIVATE_KEY` (contents of `~/.ssh/footybreakevens_deploy`)
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `DIGITALOCEAN_TOKEN` (optional; only for Terraform workflows in GitHub)
 
 Add after Terraform apply:
 

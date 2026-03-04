@@ -79,6 +79,7 @@ jobs:
 
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
+            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env config >/dev/null
             docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env pull api worker web
             docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env up -d --remove-orphans
 

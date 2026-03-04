@@ -167,18 +167,27 @@ In GitHub repo settings:
 
 1. Create environment: `production`
 2. Add required reviewers for that environment
-3. Add secrets (prefer environment-scoped):
+3. Add repository-level secrets (required by `Docker Release`):
 
 - `DOCKERHUB_USERNAME`
 - `DOCKERHUB_TOKEN`
-- `DIGITALOCEAN_TOKEN`
+
+4. Add production environment secrets (required by `Deploy Production`):
+
 - `DROPLET_HOST`
 - `DROPLET_USER` (e.g. `deploy`)
 - `DROPLET_SSH_PRIVATE_KEY`
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `DIGITALOCEAN_TOKEN` (optional; only if Terraform workflows use GitHub secrets)
 
 Optional:
 
 - `CLOUDFLARE_API_TOKEN` (if used by infra workflow extensions)
+
+Important:
+
+- If `DOCKERHUB_*` secrets are set only in `production` environment and not at repository scope, `Docker Release` will fail login.
 
 ---
 
@@ -213,8 +222,9 @@ What it does:
 1. copies `deploy/` assets to `/opt/rlfantasy`
 2. logs into Docker Hub on droplet
 3. sets `API_IMAGE` / `WEB_IMAGE` for selected tag
-4. runs `docker compose up -d`
-5. checks web and API health through Traefik host routing
+4. validates compose/env with `docker compose ... config`
+5. runs `docker compose up -d`
+6. checks web and API health through Traefik host routing
 
 ---
 

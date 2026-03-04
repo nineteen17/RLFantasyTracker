@@ -5,6 +5,9 @@ WORKDIR /workspace
 ENV CI=true
 
 FROM base AS deps
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
 COPY app/api/package*.json ./app/api/
 COPY packages/types/package.json ./packages/types/
 COPY packages/types/src ./packages/types/src
