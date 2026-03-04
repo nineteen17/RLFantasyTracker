@@ -166,11 +166,11 @@ gh secret set -R nineteen17/RLFantasyTracker -e production DIGITALOCEAN_TOKEN -b
 Run from your local machine:
 
 ```bash
-# 1) Push current code to main (this triggers Docker Release automatically)
+# 1) Push current code to master
 cd /Users/nickririnui/Desktop/RLFantasyTracker
 git add .
 git commit -m "chore: deployment updates" || true
-git push origin main
+git push origin master
 
 # 2) Find latest Docker Release run ID
 gh run list -R nineteen17/RLFantasyTracker --workflow "Docker Release" --limit 1
@@ -178,7 +178,7 @@ gh run list -R nineteen17/RLFantasyTracker --workflow "Docker Release" --limit 1
 # 3) Wait for Docker Release to finish
 gh run watch <DOCKER_RELEASE_RUN_ID> -R nineteen17/RLFantasyTracker
 
-# 4) Deploy Production auto-starts after successful Docker Release on main
+# 4) Deploy Production auto-starts after successful Docker Release on master
 #    Find latest deploy run ID
 gh run list -R nineteen17/RLFantasyTracker --workflow "Deploy Production" --limit 1
 

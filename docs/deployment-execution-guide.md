@@ -199,8 +199,8 @@ This publishes:
 
 Default path (automated):
 
-- Push to `main` triggers `Docker Release`.
-- After successful `Docker Release`, `Deploy Production` auto-runs using `sha-<commit>`.
+- Push to `master` triggers `Docker Release`.
+- After successful `Docker Release`, `Deploy Production` auto-runs using `sha-<commit>` from `master`.
 - This keeps production on an immutable tag tied to the built commit.
 
 Manual path (rollback/hotfix):
