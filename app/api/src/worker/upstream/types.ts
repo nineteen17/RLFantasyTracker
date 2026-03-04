@@ -41,7 +41,11 @@ export interface UpstreamMatch {
 	away_squad_odds_id: number;
 	tipping_hidden: number;
 	hashtag: string;
+	clock?: { p: number; s: number };
 }
+
+/** Raw upstream stats response: Record<playerId, stat-abbreviations> */
+export type UpstreamMatchStats = Record<string, Record<string, number>>;
 
 export interface UpstreamRound {
 	id: number;

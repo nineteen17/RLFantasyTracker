@@ -49,3 +49,25 @@ export async function fetchCoachPlayers(): Promise<UpstreamCoachPlayersResponse>
 
 	return data;
 }
+
+/**
+ * Fetch an arbitrary path under the NRL Fantasy data base URL.
+ * Used for dynamic URLs like stats/{matchNumber}.json.
+ */
+export async function fetchUpstreamPath<T>(path: string): Promise<T> {
+	const url = `${BASE_URL}/${path}`;
+	logger.info(`Fetching ${url}`);
+
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(
+			`HTTP ${response.status} fetching ${url}: ${response.statusText}`,
+		);
+	}
+
+	const data = (await response.json()) as T;
+	logger.info(`Fetched ${path}: OK`);
+
+	return data;
+}

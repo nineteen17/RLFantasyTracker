@@ -1,0 +1,159 @@
+# Staging environment with Cloudflare Tunnel
+# Run with: docker-compose up -d
+#
+# Purpose: Stable staging environment with production builds
+# Features:
+# - Production builds (optimized, minified)
+# - Uses Supabase for database (set DATABASE_URL in .env)
+# - Cloudflare Tunnel with stable URLs (staging-api.trestlepay.com, staging.trestlepay.com)
+# - FREE and unlimited bandwidth
+# - Persistent URLs for OAuth (Xero, Stripe) - no need to update webhooks
+# - Professional HTTPS with Cloudflare CDN and DDoS protection
+#
+# Prerequisites:
+# 1. Cloudflare account with trestlepay.com domain added
+# 2. Install cloudflared: brew install cloudflare/cloudflare/cloudflared
+# 3. Login: cloudflared tunnel login
+# 4. Create tunnel: cloudflared tunnel create trestlepay-staging
+# 5. Add tunnel token to .env as CLOUDFLARE_TUNNEL_TOKEN
+# 6. Configure DNS in Cloudflare (see .env.example for details)
+# 7. Set DATABASE_URL_ADMIN to Supabase pooler (:6543) for API/worker runtime.
+# 8. Set DATABASE_URL_ADMIN_DIRECT only when running RLS drift scripts.
+
+services:
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: nrl-fantasy-expert-api
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+
+      -  NODE_ENV=development
+      -  PORT=5002
+
+      - FRONTEND_URL=http://localhost:5001
+      - BASE_URL=http://localhost:5002
+
+      - JWT_ACCESS_SECRET=
+      - JWT_REFRESH_SECRET=
+      - JWT_ACCESS_EXPIRATION=1h
+      - JWT_REFRESH_EXPIRATION=7d
+
+      - SLOW_REQUEST_THRESHOLD_MS=1000
+
+      - DATABASE_URL=${DATABASE_URL}
+
+      - HIDE_API_ERRORS=false
+      - HIDE_API_LOGS=false
+
+
+    ports:
+      - '5002:5002'
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.worker
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL_ADMIN=${DATABASE_URL_ADMIN}
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      # Email (for email worker)
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM:-onboarding@resend.dev}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-TrestlePay}
+      # Third-party integrations (for xero worker)
+      - XERO_CLIENT_ID=${XERO_CLIENT_ID}
+      - XERO_CLIENT_SECRET=${XERO_CLIENT_SECRET}
+      # Storage (for pdf worker)
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+      - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+      # Monitoring
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://staging-api.trestlepay.com
+    container_name: trestlepay-web
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://staging-api.trestlepay.com
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # Cloudflare Tunnel - Stable HTTPS tunnel with persistent URLs
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: trestlepay-cloudflared
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
+      - ./tunnel-credentials.json:/etc/cloudflared/tunnel-credentials.json:ro
+    depends_on:
+      - api
+      - web
+
+  # Dozzle - Beautiful web UI for Docker logs
+  # Access at: http://localhost:8888
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: trestlepay-logs
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - '8888:8080'
+    restart: unless-stopped
+    environment:
+      - DOZZLE_LEVEL=info
+      - DOZZLE_TAILSIZE=300
+      - DOZZLE_FILTER=status=running
+
+volumes: {}

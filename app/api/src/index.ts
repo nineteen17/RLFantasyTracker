@@ -8,6 +8,7 @@ import db from "./database/data-source";
 import fs from "fs";
 import https from "node:https";
 import { INJECTION_TOKENS } from "./config";
+import { startScheduler } from "./worker/scheduler";
 
 dotenv.config();
 
@@ -30,10 +31,12 @@ const PORT = Number(process.env.PORT || 5000);
 		};
 		https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
 			logger.info(`Listening on https://localhost:${PORT}`);
+			startScheduler();
 		});
 	} else {
 		app.listen(PORT, "0.0.0.0", () => {
 			logger.info(`Listening on http://localhost:${PORT}`);
+			startScheduler();
 		});
 	}
 })().catch((error: Error) => {

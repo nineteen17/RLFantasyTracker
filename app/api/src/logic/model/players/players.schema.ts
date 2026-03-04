@@ -1,1 +1,9 @@
-export { searchQuerySchema, playerIdParamSchema, type SearchQuery } from "@nrl/types";
+export {
+	searchQuerySchema,
+	playerIdParamSchema,
+	playerHistoryQuerySchema,
+	playedWithQuerySchema,
+	type SearchQuery,
+	type PlayerHistoryQuery,
+	type PlayedWithQuery,
+} from "@nrl/types";

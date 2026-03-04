@@ -51,6 +51,7 @@ export async function findRosterBySquadId(squadId: number) {
 					ownedBy: true,
 					valueScore: true,
 					ppmSeason: true,
+					baseAvg: true,
 					projAvg: true,
 					breakEvens: true,
 					seasonRank: true,

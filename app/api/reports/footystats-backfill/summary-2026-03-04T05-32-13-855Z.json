@@ -1,0 +1,23 @@
+{
+  "startedAt": "2026-03-04T05:32:13.560Z",
+  "endedAt": "2026-03-04T05:32:13.853Z",
+  "durationMs": 293,
+  "dryRun": true,
+  "currentSeason": 2026,
+  "referenceSeason": 2025,
+  "playersQueued": 1,
+  "playersProcessed": 1,
+  "playersFailed": 0,
+  "playersWithNoStats": 0,
+  "requestsSucceeded": 1,
+  "requestsFailed": 0,
+  "rowsFetched": 50,
+  "rowsInvalid": 0,
+  "rowsAfterDedupe": 48,
+  "rowsSkippedByDedupe": 2,
+  "rowsUpserted": 48,
+  "roundStubsInserted": 0,
+  "roundStubsPlanned": 3,
+  "transferUpdatesApplied": 0,
+  "transferUpdatesPlanned": 0
+}

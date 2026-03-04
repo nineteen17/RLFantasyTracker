@@ -1,7 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
 	bigint,
-	bigserial,
 	boolean,
 	index,
 	integer,
@@ -221,11 +220,15 @@ export const playerCurrent = pgTable(
 		opponents: jsonb("opponents"),
 		venuesSplit: jsonb("venues"),
 
+		// Round-by-round fantasy scores { roundId: points }
+		scores: jsonb("scores"),
+
 		// Historical context
 		lastSeasonScores: jsonb("last_season_scores"),
 		transfers: jsonb("transfers"),
 
 		// Derived metrics
+		baseAvg: numeric("base_avg", { precision: 5, scale: 2 }),
 		ppmSeason: numeric("ppm_season", { precision: 8, scale: 4 }),
 		ppmLast3: numeric("ppm_last_3", { precision: 8, scale: 4 }),
 		ppmLast5: numeric("ppm_last_5", { precision: 8, scale: 4 }),
@@ -277,6 +280,41 @@ export const playerRoundStats = pgTable(
 		primaryKey({ columns: [t.season, t.roundId, t.playerId] }),
 		index("idx_prs_player").on(t.playerId, t.season),
 		index("idx_prs_round").on(t.season, t.roundId),
+	],
+);
+
+export const playerMatchStatsHistory = pgTable(
+	"player_match_stats_history",
+	{
+		season: integer("season").notNull(),
+		roundId: integer("round_id")
+			.references(() => rounds.roundId)
+			.notNull(),
+		matchId: bigint("match_id", { mode: "number" }).notNull(),
+		playerId: bigint("player_id", { mode: "number" })
+			.references(() => players.playerId)
+			.notNull(),
+		squadId: bigint("squad_id", { mode: "number" }).notNull(),
+		matchType: text("match_type").notNull(),
+		matchDate: timestamp("match_date", { withTimezone: true }),
+		fantasyPoints: integer("fantasy_points"),
+		timeOnGround: integer("time_on_ground"),
+		tries: integer("tries"),
+		tryAssists: integer("try_assists"),
+		tackles: integer("tackles"),
+		missedTackles: integer("missed_tackles"),
+		metresGained: integer("metres_gained"),
+		kickMetres: integer("kick_metres"),
+		errors: integer("errors"),
+		offloads: integer("offloads"),
+		raw: jsonb("raw"),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+	},
+	(t) => [
+		primaryKey({ columns: [t.season, t.matchId, t.playerId] }),
+		index("idx_pmsh_player").on(t.playerId, t.season),
+		index("idx_pmsh_round").on(t.season, t.roundId),
+		index("idx_pmsh_match").on(t.season, t.matchId),
 	],
 );
 
@@ -342,6 +380,7 @@ export const venuesRelations = relations(venues, ({ many }) => ({
 export const roundsRelations = relations(rounds, ({ many }) => ({
 	fixtures: many(fixtures),
 	playerRoundStats: many(playerRoundStats),
+	playerMatchStatsHistory: many(playerMatchStatsHistory),
 }));
 
 export const fixturesRelations = relations(fixtures, ({ one }) => ({
@@ -375,6 +414,7 @@ export const playersRelations = relations(players, ({ one, many }) => ({
 		references: [playerCurrent.playerId],
 	}),
 	roundStats: many(playerRoundStats),
+	matchStatsHistory: many(playerMatchStatsHistory),
 	priceHistory: many(playerPriceHistory),
 	ownershipHistory: many(playerOwnershipHistory),
 }));
@@ -406,6 +446,20 @@ export const playerPriceHistoryRelations = relations(
 		player: one(players, {
 			fields: [playerPriceHistory.playerId],
 			references: [players.playerId],
+		}),
+	}),
+);
+
+export const playerMatchStatsHistoryRelations = relations(
+	playerMatchStatsHistory,
+	({ one }) => ({
+		player: one(players, {
+			fields: [playerMatchStatsHistory.playerId],
+			references: [players.playerId],
+		}),
+		round: one(rounds, {
+			fields: [playerMatchStatsHistory.roundId],
+			references: [rounds.roundId],
 		}),
 	}),
 );

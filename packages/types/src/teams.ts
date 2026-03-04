@@ -28,6 +28,7 @@ export const PlayerCardSchema = z.object({
 			ownedBy: z.string().nullable(),
 			valueScore: z.string().nullable(),
 			ppmSeason: z.string().nullable(),
+			baseAvg: z.string().nullable(),
 			projAvg: z.string().nullable(),
 			breakEvens: z.any().nullable(),
 			seasonRank: z.number().nullable(),

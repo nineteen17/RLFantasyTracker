@@ -8,6 +8,27 @@
       "when": 1772281060731,
       "tag": "0000_aromatic_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772357606152,
+      "tag": "0001_common_korvac",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772416967399,
+      "tag": "0002_good_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772600000000,
+      "tag": "0003_tense_corsair",
+      "breakpoints": true
     }
   ]
 }

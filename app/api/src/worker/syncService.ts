@@ -20,6 +20,37 @@ export interface SyncResult {
 	durationMs: number;
 }
 
+export interface LightSyncResult {
+	players: number;
+	coach: number;
+	durationMs: number;
+}
+
+/**
+ * Light sync: only players.json + coach/players.json.
+ * Fast — gets latest scores, ownership, break evens.
+ */
+export async function runLightSync(): Promise<LightSyncResult> {
+	const start = Date.now();
+	logger.info("=== Light Sync Started ===");
+
+	const roundsData = await fetchUpstream<UpstreamRound[]>("rounds");
+	const season =
+		roundsData.length > 0
+			? deriveSeason(roundsData[0].start)
+			: new Date().getFullYear();
+
+	const playersCount = await syncPlayers(season);
+	const coachCount = await syncCoach();
+
+	const durationMs = Date.now() - start;
+
+	logger.info(`=== Light Sync Complete in ${durationMs}ms ===`);
+	logger.info(`Results: players=${playersCount}, coach=${coachCount}`);
+
+	return { players: playersCount, coach: coachCount, durationMs };
+}
+
 export async function runFullSync(): Promise<SyncResult> {
 	const start = Date.now();
 	logger.info("=== Full Sync Started ===");

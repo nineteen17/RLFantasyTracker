@@ -34,7 +34,9 @@ const routes = {
 // ====================
 
 Object.entries(schemas).forEach(([key, schema]) => {
-	registry.register(key, schema.openapi(key));
+	if (typeof schema.openapi === "function") {
+		registry.register(key, schema.openapi(key));
+	}
 });
 
 Object.values(routes).forEach((route) => {
