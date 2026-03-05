@@ -54,7 +54,8 @@
     "tsyringe": "^4.10.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
-    "zod": "^3.25.51"
+    "zod": "^3.25.51",
+    "dotenv": "^16.6.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -69,7 +70,6 @@
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-express": "^4.1.8",
     "depcheck": "^1.4.7",
-    "dotenv": "^16.6.1",
     "dotenv-cli": "^8.0.0",
     "drizzle-kit": "^0.31.9",
     "sqlite3": "^5.1.7",
