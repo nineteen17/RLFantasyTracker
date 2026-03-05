@@ -168,8 +168,6 @@ services:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_INCLUDE_RESTARTING=true
       - WATCHTOWER_ROLLING_RESTART=true
-      - REPO_USER=${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME}
-      - REPO_PASS=${DOCKERHUB_TOKEN:?set DOCKERHUB_TOKEN}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
