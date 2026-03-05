@@ -31,5 +31,8 @@ terraform apply
 
 ## Notes
 
-- Keep `enable_cloudflare_origin_lock=true` for secure origin posture.
-- Keep `terraform.tfvars` out of git (contains sensitive infra data).
+- Terraform manages infrastructure only (droplet, firewall, reserved IP)
+- **Deployment is handled by Watchtower** — see [deployment docs](../../docs/deployment-digitalocean-docker-terraform.md)
+- SSH (port 22) is restricted to admin IPs in the firewall; no CI/CD SSH access needed
+- Keep `enable_cloudflare_origin_lock=true` for secure origin posture
+- Keep `terraform.tfvars` out of git (contains sensitive infra data)
