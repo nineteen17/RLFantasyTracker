@@ -65,64 +65,58 @@ jobs:
           echo "FIREWALL_ID=$FIREWALL_ID" >> $GITHUB_ENV
           doctl compute firewall add-rules $FIREWALL_ID --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0"
           
-          echo "Waiting for firewall rule to propagate dynamically via nc..."
-          SUCCESS=0
-          for i in {1..15}; do
-            if nc -z -w 5 ${{ secrets.DROPLET_HOST }} 22; then
-              echo "Firewall is open and accepting connections!"
-              SUCCESS=1
+          echo "Waiting for firewall rule to propagate..."
+          for i in {1..12}; do
+            if nc -z -w 5 ${{ secrets.DROPLET_HOST }} 22 2>/dev/null; then
+              echo "Port 22 is reachable!"
               break
             fi
-            echo "Still waiting for DO Firewall to propagate port 22 ($i/15)..."
+            echo "Waiting... ($i/12)"
             sleep 5
           done
-          if [ $SUCCESS -eq 0 ]; then
-            echo "DO Firewall failed to propagate port 22 after 75s!"
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DROPLET_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Sync deploy assets to droplet
+        run: |
+          scp -i ~/.ssh/deploy_key -o ConnectTimeout=30 -o StrictHostKeyChecking=no \
+            -r deploy ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/opt/rlfantasy/
+
+      - name: Deploy via SSH
+        run: |
+          ssh -i ~/.ssh/deploy_key -o ConnectTimeout=30 -o StrictHostKeyChecking=no \
+            ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} bash -s <<'DEPLOY_SCRIPT'
+          set -euo pipefail
+
+          if [ ! -f /opt/rlfantasy/.env ]; then
+            echo "Missing /opt/rlfantasy/.env"
             exit 1
           fi
 
-      - name: Sync deploy assets to droplet
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_PRIVATE_KEY }}
-          source: "deploy"
-          target: "/opt/rlfantasy"
+          cd /opt/rlfantasy
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_PRIVATE_KEY }}
-          script_stop: true
-          script: |
-            set -euo pipefail
+          export IMAGE_TAG="${{ steps.meta.outputs.image_tag }}"
+          export API_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-api:${IMAGE_TAG}"
+          export WEB_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-web:${IMAGE_TAG}"
 
-            if [ ! -f /opt/rlfantasy/.env ]; then
-              echo "Missing /opt/rlfantasy/.env"
-              exit 1
-            fi
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-            cd /opt/rlfantasy
+          docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env config >/dev/null
+          docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env pull api worker web
+          docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env up -d --remove-orphans
 
-            export IMAGE_TAG="${{ steps.meta.outputs.image_tag }}"
-            export API_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-api:${IMAGE_TAG}"
-            export WEB_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rlfantasy-web:${IMAGE_TAG}"
-
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
-            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env config >/dev/null
-            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env pull api worker web
-            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env up -d --remove-orphans
-
-            docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env ps
-            APP_DOMAIN="$(grep '^APP_DOMAIN=' /opt/rlfantasy/.env | cut -d '=' -f2-)"
-            API_DOMAIN="$(grep '^API_DOMAIN=' /opt/rlfantasy/.env | cut -d '=' -f2-)"
-            curl -fsS -H "Host: ${APP_DOMAIN}" http://127.0.0.1/ >/dev/null
-            curl -fsS -H "Host: ${API_DOMAIN}" http://127.0.0.1/health >/dev/null
-            docker image prune -f
+          docker compose -f deploy/compose/compose.prod.yml --env-file /opt/rlfantasy/.env ps
+          APP_DOMAIN="$(grep '^APP_DOMAIN=' /opt/rlfantasy/.env | cut -d '=' -f2-)"
+          API_DOMAIN="$(grep '^API_DOMAIN=' /opt/rlfantasy/.env | cut -d '=' -f2-)"
+          curl -fsS -H "Host: ${APP_DOMAIN}" http://127.0.0.1/ >/dev/null
+          curl -fsS -H "Host: ${API_DOMAIN}" http://127.0.0.1/health >/dev/null
+          docker image prune -f
+          DEPLOY_SCRIPT
 
       - name: Close Firewall for GitHub Actions
         if: always()
@@ -132,3 +126,7 @@ jobs:
           if [ -n "${{ env.FIREWALL_ID }}" ]; then
             doctl compute firewall remove-rules ${{ env.FIREWALL_ID }} --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0"
           fi
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
