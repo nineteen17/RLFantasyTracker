@@ -9,15 +9,15 @@ export default function Home() {
           style={{ backgroundImage: "url('/stadium-250301_akk_1546-1.jpg')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-bg/85 via-bg/52 to-bg/28" />
-        <div className="absolute inset-0 bg-gradient-to-t from-bg/95 via-bg/35 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg/100 via-bg/35 to-transparent" />
         <div className="absolute -left-28 bottom-0 h-64 w-64 rounded-full bg-accent/12 blur-3xl" />
         <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-sky-400/12 blur-3xl" />
 
         <div className="relative mx-auto w-full max-w-6xl">
           <div className="max-w-3xl">
-            <p className="inline-flex rounded-full border border-accent/45 bg-accent/10 px-3 py-1 text-xs font-semibold tracking-wide text-accent-light uppercase backdrop-blur-sm">
+            {/* <p className="inline-flex rounded-full border border-accent/45 bg-accent/10 px-3 py-1 text-xs font-semibold tracking-wide text-accent-light uppercase backdrop-blur-sm">
               Data-Driven Fantasy
-            </p>
+            </p> */}
             <h1 className="mt-4 text-3xl leading-tight font-bold text-white sm:mt-6 sm:text-5xl lg:mt-7 lg:text-6xl">
               Become an NRL Fantasy Expert
             </h1>
