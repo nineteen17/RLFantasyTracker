@@ -21,13 +21,6 @@ COPY packages/types ./packages/types
 RUN cd packages/types && npm install && npm run build
 RUN cd app/client && npm run build
 
-FROM base AS prod-deps
-COPY app/client/package*.json ./app/client/
-COPY --from=build /workspace/packages/types/package*.json ./packages/types/
-COPY --from=build /workspace/packages/types/dist ./packages/types/dist
-RUN cd app/client && \
-  if [ -f package-lock.json ]; then npm ci --omit=dev --omit=optional || npm install --omit=dev --omit=optional; else npm install --omit=dev --omit=optional; fi
-
 FROM node:22-bookworm-slim AS runner
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -38,12 +31,9 @@ WORKDIR /app
 RUN groupadd --system --gid 10001 app && \
     useradd --system --uid 10001 --gid app app
 
-COPY --from=prod-deps /workspace/app/client/node_modules ./node_modules
-COPY --from=build /workspace/app/client/package*.json ./
-COPY --from=build /workspace/app/client/.next ./.next
-COPY --from=build /workspace/app/client/public ./public
-COPY --from=build /workspace/app/client/next.config.ts ./next.config.ts
-COPY --from=build /workspace/packages/types /packages/types
+COPY --from=build /workspace/app/client/.next/standalone ./
+COPY --from=build /workspace/app/client/.next/static ./app/client/.next/static
+COPY --from=build /workspace/app/client/public ./app/client/public
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
     chown -R app:app /app
@@ -51,4 +41,4 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 USER app
 EXPOSE 3000
 
-CMD ["node_modules/.bin/next", "start", "-p", "3000", "-H", "0.0.0.0"]
+CMD ["node", "app/client/server.js"]
