@@ -65,24 +65,28 @@ jobs:
           sbom: true
 
       - name: Scan API image (Trivy)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-api:sha-${{ github.sha }}
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
-          ignore-unfixed: true
-          format: "table"
-          exit-code: "1"
+        run: |
+          docker run --rm \
+            -v "$HOME/.docker:/root/.docker:ro" \
+            aquasec/trivy:latest \
+            image \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --format table \
+            --exit-code 1 \
+            docker.io/${DOCKERHUB_USERNAME}/rlfantasy-api:sha-${GITHUB_SHA}
 
       - name: Scan Web image (Trivy)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-web:sha-${{ github.sha }}
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
-          ignore-unfixed: true
-          format: "table"
-          exit-code: "1"
+        run: |
+          docker run --rm \
+            -v "$HOME/.docker:/root/.docker:ro" \
+            aquasec/trivy:latest \
+            image \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --format table \
+            --exit-code 1 \
+            docker.io/${DOCKERHUB_USERNAME}/rlfantasy-web:sha-${GITHUB_SHA}
 
       - name: Emit image digests
         run: |
