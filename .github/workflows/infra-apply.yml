@@ -33,10 +33,4 @@ jobs:
       - name: Terraform apply
         env:
           TF_VAR_do_token: ${{ secrets.DIGITALOCEAN_TOKEN }}
-        run: |
-          terraform apply -auto-approve \
-            -var='region=syd1' \
-            -var='droplet_size=s-1vcpu-2gb' \
-            -var='ssh_key_fingerprints=[]' \
-            -var='admin_cidrs=["0.0.0.0/0"]' \
-            -var='enable_cloudflare_origin_lock=false'
+        run: terraform apply -auto-approve
