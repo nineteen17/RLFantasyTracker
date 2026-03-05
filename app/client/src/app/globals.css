@@ -53,6 +53,53 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Hero image treatments tuned per theme to avoid washout in light mode. */
+.hero-bg-image {
+  filter: none;
+}
+
+.hero-overlay-side {
+  background: linear-gradient(
+    90deg,
+    rgba(11, 8, 20, 0.85) 0%,
+    rgba(11, 8, 20, 0.52) 48%,
+    rgba(11, 8, 20, 0.28) 100%
+  );
+}
+
+.hero-overlay-bottom {
+  background: linear-gradient(
+    0deg,
+    rgba(11, 8, 20, 1) 0%,
+    rgba(11, 8, 20, 0.35) 52%,
+    rgba(11, 8, 20, 0) 100%
+  );
+}
+
+:root[data-theme="light"] .hero-bg-image {
+  filter: saturate(1.05) contrast(1.06) brightness(0.9);
+}
+
+:root[data-theme="light"] .hero-overlay-side {
+  background: linear-gradient(
+    90deg,
+    rgba(46, 38, 62, 0.62) 0%,
+    rgba(46, 38, 62, 0.38) 48%,
+    rgba(46, 38, 62, 0.18) 100%
+  );
+  mix-blend-mode: multiply;
+}
+
+:root[data-theme="light"] .hero-overlay-bottom {
+  background: linear-gradient(
+    0deg,
+    rgba(46, 38, 62, 0.8) 0%,
+    rgba(46, 38, 62, 0.32) 52%,
+    rgba(11, 8, 20, 0) 100%
+  );
+  mix-blend-mode: multiply;
+}
+
 /* Scrollbar styling — scoped so .scrollbar-none can override */
 *:not(.scrollbar-none)::-webkit-scrollbar {
   width: 8px;

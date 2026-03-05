@@ -5,11 +5,11 @@ export default function Home() {
     <div>
       <section className="relative -mx-4 flex min-h-[60vh] items-end overflow-hidden rounded-none px-5 py-8 sm:mx-0 sm:min-h-[66vh] sm:items-center sm:rounded-2xl sm:px-10 sm:py-14 lg:min-h-[74vh] lg:px-14 lg:py-20">
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="hero-bg-image absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/stadium-250301_akk_1546-1.jpg')" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-bg/85 via-bg/52 to-bg/28" />
-        <div className="absolute inset-0 bg-gradient-to-t from-bg/100 via-bg/35 to-transparent" />
+        <div className="hero-overlay-side absolute inset-0" />
+        <div className="hero-overlay-bottom absolute inset-0" />
         <div className="absolute -left-28 bottom-0 h-64 w-64 rounded-full bg-accent/12 blur-3xl" />
         <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-sky-400/12 blur-3xl" />
 
