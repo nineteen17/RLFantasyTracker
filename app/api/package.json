@@ -46,7 +46,7 @@
     "express-rate-limit": "^7.5.0",
     "fs": "^0.0.1-security",
     "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.2",
+    "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.2.1",
     "pg": "^8.16.0",
     "reflect-metadata": "^0.2.2",
