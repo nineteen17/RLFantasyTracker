@@ -53,5 +53,4 @@ jobs:
             -var='region=syd1' \
             -var='droplet_size=s-1vcpu-2gb' \
             -var='ssh_key_fingerprints=[]' \
-            -var='admin_cidrs=["127.0.0.1/32"]' \
             -var='enable_cloudflare_origin_lock=false'
