@@ -19,11 +19,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Footy Break Evens",
   description: "Player stats, value metrics, and team analysis",
-  icons: {
-    icon: "/stadium-250301_akk_1546-1.jpg",
-    shortcut: "/stadium-250301_akk_1546-1.jpg",
-    apple: "/stadium-250301_akk_1546-1.jpg",
-  },
 };
 
 export default function RootLayout({
