@@ -69,7 +69,7 @@
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-express": "^4.1.8",
     "depcheck": "^1.4.7",
-    "dotenv": "^16.5.0",
+    "dotenv": "^16.6.1",
     "dotenv-cli": "^8.0.0",
     "drizzle-kit": "^0.31.9",
     "sqlite3": "^5.1.7",
