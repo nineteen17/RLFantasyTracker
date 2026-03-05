@@ -67,7 +67,16 @@ jobs:
           echo "FIREWALL_ID=$FIREWALL_ID" >> $GITHUB_ENV
           echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
           doctl compute firewall add-rules $FIREWALL_ID --inbound-rules "protocol:tcp,ports:22,address:$RUNNER_IP"
-          sleep 5
+          
+          echo "Waiting for firewall rule to propagate..."
+          for i in {1..15}; do
+            if nc -z -w 5 ${{ secrets.DROPLET_HOST }} 22; then
+              echo "Firewall is open and accepting connections!"
+              break
+            fi
+            echo "Still waiting for port 22..."
+            sleep 5
+          done
 
       - name: Sync deploy assets to droplet
         uses: appleboy/scp-action@v0.1.7
