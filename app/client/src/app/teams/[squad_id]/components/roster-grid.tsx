@@ -13,50 +13,64 @@ interface RosterGridProps {
 
 type SortField = "name" | "price" | "avg" | "base" | "owned" | "ppm";
 
+function toFiniteNumber(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+
+  const parsed =
+    typeof value === "number" ? value : Number.parseFloat(value.trim());
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function compareNullableNumbers(
+  a: number | null,
+  b: number | null,
+  sortOrder: "asc" | "desc",
+): number {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+
+  return sortOrder === "asc" ? a - b : b - a;
+}
+
+function getNumericSortValue(player: PlayerCard, field: SortField): number | null {
+  switch (field) {
+    case "price":
+      return toFiniteNumber(player.cost);
+    case "avg":
+      return toFiniteNumber(player.current?.avgPoints);
+    case "owned":
+      return toFiniteNumber(player.current?.ownedBy);
+    case "base":
+      return toFiniteNumber(player.current?.baseAvg);
+    case "ppm":
+      return toFiniteNumber(player.current?.ppmSeason);
+    default:
+      return null;
+  }
+}
+
 export function RosterGrid({ roster, squadId }: RosterGridProps) {
   const [sortField, setSortField] = useState<SortField>("avg");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const sortedRoster = [...roster].sort((a, b) => {
-    let aVal: number | string = 0;
-    let bVal: number | string = 0;
-
-    switch (sortField) {
-      case "name":
-        aVal = a.fullName;
-        bVal = b.fullName;
-        break;
-      case "price":
-        aVal = a.cost;
-        bVal = b.cost;
-        break;
-      case "avg":
-        aVal = Number.parseFloat(a.current?.avgPoints ?? "0");
-        bVal = Number.parseFloat(b.current?.avgPoints ?? "0");
-        break;
-      case "owned":
-        aVal = Number.parseFloat(a.current?.ownedBy ?? "0");
-        bVal = Number.parseFloat(b.current?.ownedBy ?? "0");
-        break;
-      case "base":
-        aVal = Number.parseFloat(a.current?.baseAvg ?? "0");
-        bVal = Number.parseFloat(b.current?.baseAvg ?? "0");
-        break;
-      case "ppm":
-        aVal = Number.parseFloat(a.current?.ppmSeason ?? "0");
-        bVal = Number.parseFloat(b.current?.ppmSeason ?? "0");
-        break;
-    }
-
-    if (typeof aVal === "string" && typeof bVal === "string") {
+    if (sortField === "name") {
       return sortOrder === "asc"
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal);
+        ? a.fullName.localeCompare(b.fullName)
+        : b.fullName.localeCompare(a.fullName);
     }
 
-    const aNum = aVal as number;
-    const bNum = bVal as number;
-    return sortOrder === "asc" ? aNum - bNum : bNum - aNum;
+    const result = compareNullableNumbers(
+      getNumericSortValue(a, sortField),
+      getNumericSortValue(b, sortField),
+      sortOrder,
+    );
+
+    if (result !== 0) return result;
+
+    return a.fullName.localeCompare(b.fullName);
   });
 
   const handleSort = (field: SortField) => {
