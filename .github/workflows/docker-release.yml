@@ -45,6 +45,7 @@ jobs:
           context: .
           file: ./deploy/docker/api.Dockerfile
           push: true
+          no-cache: true
           tags: |
             docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-api:sha-${{ github.sha }}
             docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-api:latest
