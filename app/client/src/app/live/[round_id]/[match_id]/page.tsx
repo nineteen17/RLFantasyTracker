@@ -63,8 +63,9 @@ export default function MatchDetailPage({
 
   function formatClock(clock?: { p: number; s: number }): string {
     if (!clock) return "";
-    const mins = Math.floor(clock.s / 60);
-    const period = clock.p === 1 ? "1st" : "2nd";
+    if (clock.s < 0) return "HT";
+    const mins = Math.max(0, Math.floor(clock.s / 60));
+    const period = clock.p >= 2 ? "2nd" : "1st";
     return `${mins}' (${period})`;
   }
 
@@ -95,7 +96,7 @@ export default function MatchDetailPage({
             <span
               className={`rounded px-2.5 py-1 text-xs font-medium ${
                 isPlaying
-                  ? "bg-accent/15 text-accent-light"
+                  ? "bg-danger/15 text-danger"
                   : "bg-surface-alt text-muted"
               }`}
             >

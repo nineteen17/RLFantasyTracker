@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useLiveCacheIndicator } from "@/hooks/use-live-cache-indicator";
 
 interface NavItem {
   href: string;
@@ -36,6 +37,7 @@ const WATCHLIST_NAV_ITEM: NavItem = {
 export default function DesktopNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hasLiveMatch = useLiveCacheIndicator();
   const returnTo = searchParams.get("returnTo");
 
   const teamContextOnPlayer =
@@ -71,7 +73,15 @@ export default function DesktopNav() {
                         : "text-muted hover:text-accent-light"
                     }`}
                   >
-                    {item.label}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>{item.label}</span>
+                      {item.href === "/live" && hasLiveMatch && (
+                        <span
+                          aria-label="Live matches"
+                          className="h-2 w-2 rounded-full bg-danger"
+                        />
+                      )}
+                    </span>
                   </Link>
                 );
               })}

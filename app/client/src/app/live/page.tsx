@@ -74,8 +74,8 @@ function LivePageContent() {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold shrink-0">2026 Draw</h1>
           {hasLiveMatch && (
-            <span className="flex items-center gap-1.5 text-sm text-accent-light">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+            <span className="flex items-center gap-1.5 text-sm text-foreground">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />
               Live
             </span>
           )}
@@ -190,8 +190,9 @@ function MatchScoreCard({
 
   function formatClock(clock?: { p: number; s: number }): string {
     if (!clock) return "";
-    const mins = Math.floor(clock.s / 60);
-    const period = clock.p === 1 ? "1st" : "2nd";
+    if (clock.s < 0) return "HT";
+    const mins = Math.max(0, Math.floor(clock.s / 60));
+    const period = clock.p >= 2 ? "2nd" : "1st";
     return `${mins}' (${period})`;
   }
 
@@ -213,7 +214,7 @@ function MatchScoreCard({
           <span
             className={`rounded px-2 py-0.5 text-xs font-medium ${
               isLive
-                ? "bg-accent/15 text-accent-light"
+                ? "bg-danger text-white"
                 : isComplete
                   ? "bg-surface-alt text-muted"
                   : "bg-surface-alt text-muted/60"

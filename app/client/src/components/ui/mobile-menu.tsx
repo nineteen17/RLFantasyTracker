@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { useLiveCacheIndicator } from "@/hooks/use-live-cache-indicator";
 
 interface NavItem {
   href: string;
@@ -38,6 +39,7 @@ export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hasLiveMatch = useLiveCacheIndicator();
   const returnTo = searchParams.get("returnTo");
 
   const teamContextOnPlayer =
@@ -100,7 +102,15 @@ export default function MobileMenu() {
                         : "text-muted hover:text-accent-light"
                     }`}
                   >
-                    {item.label}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>{item.label}</span>
+                      {item.href === "/live" && hasLiveMatch && (
+                        <span
+                          aria-label="Live matches"
+                          className="h-2 w-2 rounded-full bg-danger"
+                        />
+                      )}
+                    </span>
                   </Link>
                 );
               })}
