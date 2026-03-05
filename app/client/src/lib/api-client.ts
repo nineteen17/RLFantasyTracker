@@ -1,4 +1,48 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+function getRuntimeApiBase(): string {
+  if (typeof window === "undefined") {
+    return "http://localhost:3001";
+  }
+
+  const { hostname, origin, protocol } = window.location;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+
+  if (hostname.startsWith("api.")) {
+    return origin;
+  }
+
+  if (isLocalhost) {
+    return "http://localhost:3001";
+  }
+
+  return `${protocol}//api.${hostname}`;
+}
+
+function getApiBase(): string {
+  const configuredBase = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!configuredBase) {
+    return getRuntimeApiBase();
+  }
+
+  if (typeof window === "undefined") {
+    return configuredBase;
+  }
+
+  const isConfiguredLocalhost =
+    configuredBase.includes("localhost") || configuredBase.includes("127.0.0.1");
+  const isBrowserLocalhost =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+
+  // Ignore dev-only API URLs when running from a real domain.
+  if (isConfiguredLocalhost && !isBrowserLocalhost) {
+    return getRuntimeApiBase();
+  }
+
+  return configuredBase;
+}
+
+const API_BASE = getApiBase();
 
 export class ApiError extends Error {
   constructor(

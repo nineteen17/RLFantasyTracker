@@ -14,6 +14,8 @@ RUN --mount=type=cache,target=/root/.npm sh -lc '\
   if [ -f package-lock.json ]; then npm ci || npm install; else npm install; fi'
 
 FROM base AS build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY --from=deps /workspace/app/client/node_modules ./app/client/node_modules
 COPY --from=deps /workspace/packages/types ./packages/types
 COPY app/client ./app/client

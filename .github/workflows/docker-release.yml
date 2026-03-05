@@ -18,6 +18,7 @@ jobs:
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      API_DOMAIN: ${{ vars.API_DOMAIN || 'api.footybreakevens.com' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -59,6 +60,8 @@ jobs:
           context: .
           file: ./deploy/docker/web.Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://${{ env.API_DOMAIN }}
           tags: |
             docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-web:sha-${{ github.sha }}
             docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-web:latest
