@@ -63,7 +63,7 @@ jobs:
             exit 1
           fi
           echo "FIREWALL_ID=$FIREWALL_ID" >> $GITHUB_ENV
-          doctl compute firewall add-rules $FIREWALL_ID --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0,address:::/0"
+          doctl compute firewall add-rules $FIREWALL_ID --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0"
           
           echo "Temporary firewall rule added. Waiting 10s for DO propagation..."
           sleep 10
@@ -117,5 +117,5 @@ jobs:
           doctl auth init -t ${{ secrets.DIGITALOCEAN_TOKEN }}
 
           if [ -n "${{ env.FIREWALL_ID }}" ]; then
-            doctl compute firewall remove-rules ${{ env.FIREWALL_ID }} --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0,address:::/0"
+            doctl compute firewall remove-rules ${{ env.FIREWALL_ID }} --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0"
           fi
