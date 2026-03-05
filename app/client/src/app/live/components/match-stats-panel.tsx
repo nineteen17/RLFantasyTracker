@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { LivePlayerStat } from "@nrl/types";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
@@ -21,6 +22,8 @@ export function MatchStatsPanel({
   awayPlayers,
   isLoading = false,
 }: MatchStatsPanelProps) {
+  const [selectedTeam, setSelectedTeam] = useState<"home" | "away">("home");
+
   if (isLoading) {
     return (
       <div className="space-y-4 p-4">
@@ -40,10 +43,42 @@ export function MatchStatsPanel({
     );
   }
 
+  const selectedTeamName =
+    selectedTeam === "home" ? homeSquadName : awaySquadName;
+  const selectedPlayers = selectedTeam === "home" ? homePlayers : awayPlayers;
+
   return (
-    <div className="divide-y divide-border">
-      <TeamStatsTable teamName={homeSquadName} players={homePlayers} />
-      <TeamStatsTable teamName={awaySquadName} players={awayPlayers} />
+    <div>
+      <div className="border-b border-border/70 px-4 py-3 md:px-6 md:py-4">
+        <div className="mx-auto w-full max-w-2xl">
+          <div className="grid grid-cols-2 gap-2 rounded-full border border-border bg-surface-alt p-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setSelectedTeam("home")}
+              className={`rounded-full px-3 py-1.5 font-medium transition-colors ${
+                selectedTeam === "home"
+                  ? "bg-accent/15 text-accent-light"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              {homeSquadName}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedTeam("away")}
+              className={`rounded-full px-3 py-1.5 font-medium transition-colors ${
+                selectedTeam === "away"
+                  ? "bg-accent/15 text-accent-light"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              {awaySquadName}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <TeamStatsTable teamName={selectedTeamName} players={selectedPlayers} />
     </div>
   );
 }
