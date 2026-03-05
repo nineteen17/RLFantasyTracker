@@ -54,6 +54,8 @@ jobs:
 
       - name: Open Firewall for GitHub Actions
         run: |
+          doctl auth init -t ${{ secrets.DIGITALOCEAN_TOKEN }}
+
           RUNNER_IP=$(curl -s http://checkip.amazonaws.com)
           echo "Runner IP: $RUNNER_IP"
           FIREWALL_NAME="rlfantasy-prod-fw"
@@ -113,6 +115,8 @@ jobs:
       - name: Close Firewall for GitHub Actions
         if: always()
         run: |
+          doctl auth init -t ${{ secrets.DIGITALOCEAN_TOKEN }}
+
           if [ -n "${{ env.FIREWALL_ID }}" ] && [ -n "${{ env.RUNNER_IP }}" ]; then
             doctl compute firewall remove-rules ${{ env.FIREWALL_ID }} --inbound-rules "protocol:tcp,ports:22,address:${{ env.RUNNER_IP }}"
           fi
