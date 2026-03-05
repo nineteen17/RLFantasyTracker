@@ -15,6 +15,14 @@ interface MatchStatsPanelProps {
   isLoading?: boolean;
 }
 
+function formatCompactPlayerName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return fullName;
+  const firstInitial = parts[0].charAt(0).toUpperCase();
+  const surname = parts[parts.length - 1];
+  return `${firstInitial}.${surname}`;
+}
+
 export function MatchStatsPanel({
   homeSquadName,
   awaySquadName,
@@ -128,7 +136,15 @@ function TeamStatsTable({
         {teamName}
       </h3>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm md:text-base">
+        <table className="min-w-max table-fixed text-sm md:text-base">
+          <colgroup>
+            <col className="w-[140px] md:w-[280px]" />
+            <col className="w-14 md:w-16" />
+            <col className="w-14 md:w-16" />
+            {ALL_STATS.map((s) => (
+              <col key={`col-${s.key}`} className="w-14 md:w-16" />
+            ))}
+          </colgroup>
           <thead>
             <tr className="text-xs text-muted md:text-sm">
               <th className="pb-2 text-left font-medium sticky left-0 bg-surface z-10">
@@ -162,17 +178,21 @@ function TeamStatsTable({
                   key={player.playerId}
                   className="border-t border-border/50 hover:bg-surface-alt/30"
                 >
-                  <td className="py-2.5 pr-10 whitespace-nowrap sticky left-0 bg-surface z-10">
-                    <div className="flex items-center gap-2 text-xs md:text-sm">
+                  <td className="py-2.5 pr-2 whitespace-nowrap sticky left-0 bg-surface z-10 md:pr-10">
+                    <div className="flex items-center gap-1 text-xs md:gap-2 md:text-sm">
                       <PlayerAvatar
                         playerId={player.playerId}
                         name={player.fullName}
+                        className="h-7 w-7 md:h-8 md:w-8"
                       />
                       <Link
                         href={`/players/${player.playerId}`}
-                        className="text-xs text-accent-light hover:underline md:text-sm"
+                        className="max-w-[82px] truncate text-xs text-accent-light hover:underline md:max-w-none md:text-sm"
                       >
-                        {player.fullName}
+                        <span className="md:hidden">
+                          {formatCompactPlayerName(player.fullName)}
+                        </span>
+                        <span className="hidden md:inline">{player.fullName}</span>
                       </Link>
                     </div>
                   </td>
