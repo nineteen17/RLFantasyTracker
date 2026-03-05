@@ -14,7 +14,6 @@ dotenv.config();
 
 logger.info(`NODE_ENV=${process.env.NODE_ENV}`);
 
-const NODE_ENV = process.env.NODE_ENV;
 const PORT = Number(process.env.PORT || 5000);
 const ENABLE_SCHEDULER =
 	process.env.ENABLE_SCHEDULER === undefined

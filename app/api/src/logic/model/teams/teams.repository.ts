@@ -1,6 +1,6 @@
 import { eq, or, and, asc } from "drizzle-orm";
 import db from "@database/data-source";
-import { squads, players, playerCurrent, fixtures } from "@database/schema";
+import { squads, players, fixtures } from "@database/schema";
 
 export async function findAllSquads() {
 	return db.query.squads.findMany({
