@@ -15,13 +15,19 @@ Single source of truth for Zod schemas and inferred TypeScript types. Both the E
   "name": "@nrl/types",
   "version": "1.0.0",
   "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "peerDependencies": { "zod": "^3.0.0" }
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./dist/*": "./dist/*"
+  },
+  "scripts": { "build": "tsc" },
+  "dependencies": { "zod": "^3.25.51" }
 }
 ```
 
-No build step — consumers compile raw `.ts` directly.
+Requires a build step (`npm run build` → `tsc`) to produce `dist/`. The `dist/` directory is gitignored, so CI jobs must build this package before consuming it.
 
 ## File Structure
 
@@ -81,6 +87,8 @@ packages/types/src/
 
 ## Key Decisions
 
-- Zod as peerDependency (not direct) to avoid duplicate zod instances at build time
-- No build step — raw TypeScript consumed directly by tsup (API) and Next.js (client via `transpilePackages`)
+- Zod as a direct dependency
+- Built via `tsc` to `dist/` — consumers import compiled JS + declarations
+- `dist/` is gitignored; CI must run `npm install && npm run build` in `packages/types` before building API or client
+- Next.js client uses `transpilePackages: ["@nrl/types"]` for additional bundling
 - OpenAPI docs are separate (for human reading only); shared types are the real type enforcement

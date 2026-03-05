@@ -9,7 +9,7 @@ import {
 	TeamDetailResponseSchema,
 } from "@nrl/types";
 
-export const TEAMS_OPENAPI_SCHEMAS = {
+export const TEAMS_OPENAPI_SCHEMAS: Record<string, unknown> = {
 	Squad: SquadSchema,
 	TeamPlayerCard: PlayerCardSchema,
 	FixtureStrip: FixtureStripItemSchema,

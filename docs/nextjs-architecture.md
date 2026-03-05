@@ -227,14 +227,20 @@ Wire into root layout:
 
 ```typescript
 // app/layout.tsx
+import { Suspense } from "react";
 import { QueryProvider } from "@/providers/query-provider";
+import MobileMenu from "@/components/ui/mobile-menu";
+import DesktopNav from "@/components/ui/desktop-nav";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body>
         <QueryProvider>
-          <Nav />
+          <Suspense>
+            <MobileMenu />
+            <DesktopNav />
+          </Suspense>
           <main>{children}</main>
         </QueryProvider>
       </body>
@@ -242,6 +248,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 }
 ```
+
+> Nav components use `useSearchParams()`, which requires a `<Suspense>` boundary for Next.js static prerendering.
 
 ---
 

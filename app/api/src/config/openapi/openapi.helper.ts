@@ -1,7 +1,12 @@
 import { OpenAPIRegistry, RouteConfig } from "@asteasolutions/zod-to-openapi";
-import { SchemaMap } from "@src/logic/shared/types/validation.types";
 import { ErrorMessage } from "@src/logic/shared/utils/errors/errorMessages";
-import { ZodTypeAny } from "zod";
+
+type RequestSchemaMap = Partial<
+	Record<"body" | "query" | "params" | "cookies", unknown>
+>;
+
+const isOpenApiSchema = (schema: unknown): schema is { openapi: Function } =>
+	typeof (schema as { openapi?: unknown } | undefined)?.openapi === "function";
 
 export interface OpenAPIRoute {
 	method:
@@ -16,8 +21,8 @@ export interface OpenAPIRoute {
 	path: string;
 	summary?: string;
 	tags?: string[];
-	request?: SchemaMap;
-	successResponse?: { status: number; schema?: ZodTypeAny };
+	request?: RequestSchemaMap;
+	successResponse?: { status: number; schema?: unknown };
 	errorResponses: ErrorMessage[];
 }
 
@@ -38,8 +43,8 @@ export const registerRoute = (
 	const successMessage = success
 		? {
 				[success.status]: {
-					description: success.schema ? "" : "No Content",
-					content: success.schema
+					description: isOpenApiSchema(success.schema) ? "" : "No Content",
+					content: isOpenApiSchema(success.schema)
 						? {
 								"application/json": { schema: success.schema },
 							}
@@ -61,28 +66,28 @@ export const registerRoute = (
 	});
 };
 
-const getRequestConfig = (schemaMap?: SchemaMap) => {
+const getRequestConfig = (schemaMap?: RequestSchemaMap) => {
 	if (!schemaMap) return {};
 
 	const request: RouteConfig["request"] = {};
 
-	if (schemaMap.body) {
+	if (isOpenApiSchema(schemaMap.body)) {
 		request.body = {
 			required: true,
 			content: {
 				"application/json": {
-					schema: schemaMap.body,
+					schema: schemaMap.body as any,
 				},
 			},
 		};
 	}
 
-	if (schemaMap.query) {
-		request.query = schemaMap.query;
+	if (isOpenApiSchema(schemaMap.query)) {
+		request.query = schemaMap.query as NonNullable<RouteConfig["request"]>["query"];
 	}
 
-	if (schemaMap.params) {
-		request.params = schemaMap.params;
+	if (isOpenApiSchema(schemaMap.params)) {
+		request.params = schemaMap.params as NonNullable<RouteConfig["request"]>["params"];
 	}
 
 	return { request };

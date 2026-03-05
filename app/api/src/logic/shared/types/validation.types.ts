@@ -1,7 +1,18 @@
-import { ZodTypeAny, ZodObject } from "zod";
-
 export type RequestPart = "body" | "query" | "params" | "cookies";
 
-export type SchemaMap = Partial<
-	Record<RequestPart, ZodObject<Record<string, ZodTypeAny>>>
->;
+type ValidationIssue = {
+	path: Array<string | number>;
+	message: string;
+};
+
+type ValidationResult =
+	| { success: true; data: unknown }
+	| { success: false; error: { errors: ValidationIssue[] } };
+
+export type ValidationSchema = {
+	strip: () => {
+		safeParse: (value: unknown) => ValidationResult;
+	};
+};
+
+export type SchemaMap = Partial<Record<RequestPart, ValidationSchema>>;
