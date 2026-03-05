@@ -32,8 +32,8 @@ RUN groupadd --system --gid 10001 app && \
     useradd --system --uid 10001 --gid app app
 
 COPY --from=build /workspace/app/client/.next/standalone ./
-COPY --from=build /workspace/app/client/.next/static ./app/client/.next/static
-COPY --from=build /workspace/app/client/public ./app/client/public
+COPY --from=build /workspace/app/client/.next/static ./.next/static
+COPY --from=build /workspace/app/client/public ./public
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
     chown -R app:app /app
