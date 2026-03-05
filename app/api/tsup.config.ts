@@ -4,9 +4,10 @@ export default defineConfig({
 	entry: ["src"],
 	outDir: "dist",
 	format: ["esm"],
-	dts: true,
+	dts: process.env.TSUP_DTS !== "false",
 	splitting: false,
 	clean: true,
+	noExternal: ["@nrl/types"],
 	banner: {
 		js: `import "reflect-metadata";`,
 	},

@@ -9,11 +9,7 @@
     "strict": true,
     "esModuleInterop": false,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "paths": {
-      "zod": ["../../app/api/node_modules/zod"]
-    },
-    "baseUrl": "."
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

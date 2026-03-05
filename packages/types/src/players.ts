@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PlayerMatchRawStatsSchema } from "./live";
+import { PlayerMatchRawStatsSchema } from "./live.js";
 
 // --- Request schemas ---
 

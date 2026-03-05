@@ -7,7 +7,7 @@ ENV CI=true
 
 FROM base AS deps
 COPY app/client/package*.json ./app/client/
-COPY packages/types/package.json ./packages/types/
+COPY packages/types/package*.json ./packages/types/
 COPY packages/types/src ./packages/types/src
 RUN --mount=type=cache,target=/root/.npm cd app/client && npm ci
 
@@ -15,6 +15,8 @@ FROM base AS build
 COPY --from=deps /workspace/app/client/node_modules ./app/client/node_modules
 COPY --from=deps /workspace/packages/types ./packages/types
 COPY app/client ./app/client
+COPY packages/types ./packages/types
+RUN cd packages/types && npm install && npm run build
 RUN cd app/client && npm run build
 
 FROM node:22-bookworm-slim AS runner
@@ -33,7 +35,7 @@ COPY --from=build /workspace/app/client/.next ./.next
 COPY --from=build /workspace/app/client/public ./public
 COPY --from=build /workspace/app/client/next.config.ts ./next.config.ts
 
-RUN npm prune --omit=dev && npm cache clean --force && chown -R app:app /app
+RUN npm cache clean --force && chown -R app:app /app
 
 USER app
 EXPOSE 3000

@@ -1,7 +1,7 @@
 export {
 	PaginatedResponseSchema,
 	type PaginatedResponse,
-} from "./common";
+} from "./common.js";
 
 export {
 	SquadSchema,
@@ -14,7 +14,7 @@ export {
 	type FixtureStripItem,
 	type TeamsListResponse,
 	type TeamDetailResponse,
-} from "./teams";
+} from "./teams.js";
 
 export {
 	searchQuerySchema,
@@ -40,7 +40,7 @@ export {
 	type PlayerHistoryResponse,
 	type PlayedWithQuery,
 	type PlayedWithResponse,
-} from "./players";
+} from "./players.js";
 
 export {
 	MatchClockSchema,
@@ -59,4 +59,4 @@ export {
 	type LiveStatsResponse,
 	type LiveRoundSummary,
 	type LiveRoundsListResponse,
-} from "./live";
+} from "./live.js";

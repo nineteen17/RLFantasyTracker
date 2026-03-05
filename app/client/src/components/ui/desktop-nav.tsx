@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 interface NavItem {
   href: string;
@@ -35,8 +36,13 @@ const WATCHLIST_NAV_ITEM: NavItem = {
 
 export default function DesktopNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo");
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setReturnTo(params.get("returnTo"));
+  }, [pathname]);
+
   const teamContextOnPlayer =
     pathname.startsWith("/players/") && !!returnTo && /^\/teams\/\d+$/.test(returnTo);
 

@@ -9,11 +9,14 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends python3 make g++ && \
     rm -rf /var/lib/apt/lists/*
 COPY app/api/package*.json ./app/api/
-COPY packages/types/package.json ./packages/types/
+COPY packages/types/package*.json ./packages/types/
+COPY packages/types/tsconfig.json ./packages/types/
 COPY packages/types/src ./packages/types/src
-RUN --mount=type=cache,target=/root/.npm cd app/api && npm ci
+RUN --mount=type=cache,target=/root/.npm sh -lc 'cd app/api && npm ci && cd ../../packages/types && npm install && npm run build'
 
 FROM base AS build
+ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV TSUP_DTS=false
 COPY --from=deps /workspace/app/api/node_modules ./app/api/node_modules
 COPY --from=deps /workspace/packages/types ./packages/types
 COPY app/api ./app/api
@@ -27,11 +30,12 @@ RUN groupadd --system --gid 10001 app && \
     useradd --system --uid 10001 --gid app app
 
 COPY --from=deps /workspace/app/api/node_modules ./node_modules
+COPY --from=deps /workspace/packages/types /packages/types
 COPY --from=build /workspace/app/api/package*.json ./
 COPY --from=build /workspace/app/api/dist ./dist
 COPY --from=build /workspace/app/api/drizzle ./drizzle
 
-RUN npm prune --omit=dev && npm cache clean --force
+RUN npm cache clean --force
 RUN mkdir -p /app/logs && chown -R app:app /app
 
 USER app

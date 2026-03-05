@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 
 interface NavItem {
@@ -37,8 +37,13 @@ const WATCHLIST_NAV_ITEM: NavItem = {
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo");
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setReturnTo(params.get("returnTo"));
+  }, [pathname]);
+
   const teamContextOnPlayer =
     pathname.startsWith("/players/") && !!returnTo && /^\/teams\/\d+$/.test(returnTo);
 
