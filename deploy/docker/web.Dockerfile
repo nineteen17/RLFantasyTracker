@@ -41,4 +41,4 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 USER app
 EXPOSE 3000
 
-CMD ["node", "app/client/server.js"]
+CMD ["node", "server.js"]
