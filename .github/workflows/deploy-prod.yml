@@ -47,6 +47,26 @@ jobs:
         with:
           ref: ${{ steps.meta.outputs.checkout_ref }}
 
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+
+      - name: Open Firewall for GitHub Actions
+        run: |
+          RUNNER_IP=$(curl -s http://checkip.amazonaws.com)
+          echo "Runner IP: $RUNNER_IP"
+          FIREWALL_NAME="rlfantasy-prod-fw"
+          FIREWALL_ID=$(doctl compute firewall list --format ID,Name --no-header | grep "$FIREWALL_NAME" | awk '{print $1}')
+          if [ -z "$FIREWALL_ID" ]; then
+            echo "Firewall $FIREWALL_NAME not found!"
+            exit 1
+          fi
+          echo "FIREWALL_ID=$FIREWALL_ID" >> $GITHUB_ENV
+          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
+          doctl compute firewall add-rules $FIREWALL_ID --inbound-rules "protocol:tcp,ports:22,address:$RUNNER_IP"
+          sleep 5
+
       - name: Sync deploy assets to droplet
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -89,3 +109,10 @@ jobs:
             curl -fsS -H "Host: ${APP_DOMAIN}" http://127.0.0.1/ >/dev/null
             curl -fsS -H "Host: ${API_DOMAIN}" http://127.0.0.1/health >/dev/null
             docker image prune -f
+
+      - name: Close Firewall for GitHub Actions
+        if: always()
+        run: |
+          if [ -n "${{ env.FIREWALL_ID }}" ] && [ -n "${{ env.RUNNER_IP }}" ]; then
+            doctl compute firewall remove-rules ${{ env.FIREWALL_ID }} --inbound-rules "protocol:tcp,ports:22,address:${{ env.RUNNER_IP }}"
+          fi
