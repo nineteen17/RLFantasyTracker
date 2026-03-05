@@ -25,9 +25,8 @@ FROM base AS prod-deps
 COPY app/client/package*.json ./app/client/
 COPY --from=build /workspace/packages/types/package*.json ./packages/types/
 COPY --from=build /workspace/packages/types/dist ./packages/types/dist
-RUN --mount=type=cache,target=/root/.npm sh -lc '\
-  cd app/client && \
-  if [ -f package-lock.json ]; then npm ci --omit=dev --omit=optional || npm install --omit=dev --omit=optional; else npm install --omit=dev --omit=optional; fi'
+RUN cd app/client && \
+  if [ -f package-lock.json ]; then npm ci --omit=dev --omit=optional || npm install --omit=dev --omit=optional; else npm install --omit=dev --omit=optional; fi
 
 FROM node:22-bookworm-slim AS runner
 ENV NODE_ENV=production
@@ -44,6 +43,7 @@ COPY --from=build /workspace/app/client/package*.json ./
 COPY --from=build /workspace/app/client/.next ./.next
 COPY --from=build /workspace/app/client/public ./public
 COPY --from=build /workspace/app/client/next.config.ts ./next.config.ts
+COPY --from=build /workspace/packages/types /packages/types
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
     chown -R app:app /app

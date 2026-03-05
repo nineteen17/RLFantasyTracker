@@ -10,6 +10,7 @@ services:
       - "443:443"
     environment:
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN:?set CF_DNS_API_TOKEN}
+      - DOCKER_API_VERSION=1.44
     command:
       - --global.sendanonymoususage=false
       - --global.checknewversion=false
