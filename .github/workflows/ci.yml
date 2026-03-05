@@ -24,9 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: app/api/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm run lint
       - run: npm run build
 
@@ -41,9 +39,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: app/client/package-lock.json
-      - run: npm ci
+      - name: Build @nrl/types
+        working-directory: packages/types
+        run: npm install && npm run build
+      - run: npm install
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build
