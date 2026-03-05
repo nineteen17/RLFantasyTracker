@@ -1,23 +1,55 @@
 @import "tailwindcss";
 
+:root {
+  --theme-color-bg: #0b0814;
+  --theme-color-surface: #13101f;
+  --theme-color-surface-alt: #1a1530;
+  --theme-color-border: #2a2343;
+  --theme-color-border-hover: #8b5cf6;
+  --theme-color-muted: #9b8fc2;
+  --theme-color-accent: #8b5cf6;
+  --theme-color-accent-light: #a78bfa;
+  --theme-color-danger: #f87171;
+  --theme-color-warning: #fbbf24;
+  --theme-color-text: #e8e4f0;
+  --theme-color-scrollbar-hover: #3d3560;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --theme-color-bg: #f6f5f2;
+  --theme-color-surface: #fcfbf8;
+  --theme-color-surface-alt: #f1efea;
+  --theme-color-border: #dad4ca;
+  --theme-color-border-hover: #8b5cf6;
+  --theme-color-muted: #6c6580;
+  --theme-color-accent: #7c3aed;
+  --theme-color-accent-light: #6d28d9;
+  --theme-color-danger: #dc2626;
+  --theme-color-warning: #b45309;
+  --theme-color-text: #241f33;
+  --theme-color-scrollbar-hover: #b8b0c8;
+  color-scheme: light;
+}
+
 @theme inline {
-  --color-bg: #0b0814;
-  --color-surface: #13101f;
-  --color-surface-alt: #1a1530;
-  --color-border: #2a2343;
-  --color-border-hover: #8b5cf6;
-  --color-muted: #9b8fc2;
-  --color-accent: #8b5cf6;
-  --color-accent-light: #a78bfa;
-  --color-danger: #f87171;
-  --color-warning: #fbbf24;
+  --color-bg: var(--theme-color-bg);
+  --color-surface: var(--theme-color-surface);
+  --color-surface-alt: var(--theme-color-surface-alt);
+  --color-border: var(--theme-color-border);
+  --color-border-hover: var(--theme-color-border-hover);
+  --color-muted: var(--theme-color-muted);
+  --color-accent: var(--theme-color-accent);
+  --color-accent-light: var(--theme-color-accent-light);
+  --color-danger: var(--theme-color-danger);
+  --color-warning: var(--theme-color-warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--color-bg);
-  color: #e8e4f0;
+  color: var(--theme-color-text);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -34,7 +66,7 @@ body {
   border-radius: 4px;
 }
 *:not(.scrollbar-none)::-webkit-scrollbar-thumb:hover {
-  background: #3d3560;
+  background: var(--theme-color-scrollbar-hover);
 }
 
 /* Hide scrollbar utility */

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useLiveCacheIndicator } from "@/hooks/use-live-cache-indicator";
+import ThemeToggle from "@/components/ui/theme-toggle";
 
 interface NavItem {
   href: string;
@@ -87,19 +88,22 @@ export default function DesktopNav() {
               })}
             </div>
           </div>
-          <Link
-            href={WATCHLIST_NAV_ITEM.href}
-            aria-current={
-              WATCHLIST_NAV_ITEM.isActive(pathname) ? "page" : undefined
-            }
-            className={`rounded-md border px-3 py-1.5 text-sm transition-colors lg:text-base ${
-              WATCHLIST_NAV_ITEM.isActive(pathname)
-                ? "border-accent-light/40 bg-accent-light/15 text-accent-light"
-                : "border-border text-muted hover:text-accent-light"
-            }`}
-          >
-            {WATCHLIST_NAV_ITEM.label}
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href={WATCHLIST_NAV_ITEM.href}
+              aria-current={
+                WATCHLIST_NAV_ITEM.isActive(pathname) ? "page" : undefined
+              }
+              className={`rounded-md border px-3 py-1.5 text-sm transition-colors lg:text-base ${
+                WATCHLIST_NAV_ITEM.isActive(pathname)
+                  ? "border-accent-light/40 bg-accent-light/15 text-accent-light"
+                  : "border-border text-muted hover:text-accent-light"
+              }`}
+            >
+              {WATCHLIST_NAV_ITEM.label}
+            </Link>
+          </div>
         </div>
       </div>
     </nav>

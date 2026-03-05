@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useLiveCacheIndicator } from "@/hooks/use-live-cache-indicator";
+import ThemeToggle from "@/components/ui/theme-toggle";
 
 interface NavItem {
   href: string;
@@ -56,13 +57,16 @@ export default function MobileMenu() {
           <Link href="/" className="text-xl font-bold text-accent-light">
             Footy Break Evens
           </Link>
-          <button
-            onClick={toggleMenu}
-            className="rounded-md p-2 text-muted transition-colors hover:text-accent-light"
-            aria-label="Open menu"
-          >
-            <Menu />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <button
+              onClick={toggleMenu}
+              className="rounded-md p-2 text-muted transition-colors hover:text-accent-light"
+              aria-label="Open menu"
+            >
+              <Menu />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -73,13 +77,16 @@ export default function MobileMenu() {
               <h2 className="text-lg font-bold text-accent-light">
                 Footy Break Evens
               </h2>
-              <button
-                onClick={toggleMenu}
-                className="rounded-md p-2 text-muted transition-colors hover:text-accent-light"
-                aria-label="Close menu"
-              >
-                <X />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <ThemeToggle />
+                <button
+                  onClick={toggleMenu}
+                  className="rounded-md p-2 text-muted transition-colors hover:text-accent-light"
+                  aria-label="Close menu"
+                >
+                  <X />
+                </button>
+              </div>
             </div>
 
             <nav className="mt-4 flex flex-col gap-1" onClick={toggleMenu}>
