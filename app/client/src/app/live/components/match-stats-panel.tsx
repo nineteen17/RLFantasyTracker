@@ -96,7 +96,7 @@ function StatCell({ statKey, value }: { statKey: string; value: number }) {
 
   if (value === 0) {
     return (
-      <td className="py-1.5 px-1.5 tabular-nums text-muted/30">
+      <td className="px-0.5 py-1.5 tabular-nums text-muted/30 md:px-1.5">
         <div className="flex flex-col items-center">
           <span>0</span>
           <span className="text-[10px] md:text-xs">-</span>
@@ -106,7 +106,7 @@ function StatCell({ statKey, value }: { statKey: string; value: number }) {
   }
 
   return (
-    <td className="py-1.5 px-1.5 tabular-nums">
+    <td className="px-0.5 py-1.5 tabular-nums md:px-1.5">
       <div className="flex flex-col items-center">
         <span>{value}</span>
         <span
@@ -136,13 +136,13 @@ function TeamStatsTable({
         {teamName}
       </h3>
       <div className="overflow-x-auto">
-        <table className="min-w-max table-fixed text-sm md:text-base">
+        <table className="min-w-max table-fixed text-xs md:text-base">
           <colgroup>
-            <col className="w-[140px] md:w-[280px]" />
-            <col className="w-14 md:w-16" />
-            <col className="w-14 md:w-16" />
+            <col className="w-[132px] md:w-[280px]" />
+            <col className="w-10 md:w-16" />
+            <col className="w-10 md:w-16" />
             {ALL_STATS.map((s) => (
-              <col key={`col-${s.key}`} className="w-14 md:w-16" />
+              <col key={`col-${s.key}`} className="w-10 md:w-16" />
             ))}
           </colgroup>
           <thead>
@@ -150,11 +150,11 @@ function TeamStatsTable({
               <th className="pb-2 text-left font-medium sticky left-0 bg-surface z-10">
                 Player
               </th>
-              <th className="pb-2 px-1.5 text-center font-medium text-accent-light">
+              <th className="px-0.5 pb-2 text-center font-medium text-accent-light md:px-1.5">
                 PTS
               </th>
               <th
-                className="pb-2 px-1.5 text-center font-medium"
+                className="px-0.5 pb-2 text-center font-medium md:px-1.5"
                 title="Minutes Played"
               >
                 MP
@@ -162,7 +162,7 @@ function TeamStatsTable({
               {ALL_STATS.map((s) => (
                 <th
                   key={s.key}
-                  className="pb-2 px-1.5 text-center font-medium"
+                  className="px-0.5 pb-2 text-center font-medium md:px-1.5"
                   title={s.full}
                 >
                   {s.label}
@@ -196,10 +196,10 @@ function TeamStatsTable({
                       </Link>
                     </div>
                   </td>
-                  <td className="py-1.5 px-1.5 text-center tabular-nums font-bold text-accent-light">
+                  <td className="px-0.5 py-1.5 text-center tabular-nums font-bold text-accent-light md:px-1.5">
                     {player.points}
                   </td>
-                  <td className="py-1.5 px-1.5 text-center tabular-nums">
+                  <td className="px-0.5 py-1.5 text-center tabular-nums md:px-1.5">
                     {stats.TOG ?? 0}
                   </td>
                   {ALL_STATS.map((s) => (

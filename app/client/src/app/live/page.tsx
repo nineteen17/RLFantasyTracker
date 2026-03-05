@@ -188,11 +188,16 @@ function MatchScoreCard({
   const homeWon = isComplete && match.homeScore > match.awayScore;
   const awayWon = isComplete && match.awayScore > match.homeScore;
 
-  function formatClock(clock?: { p: number; s: number }): string {
+  function formatClock(clock?: { p: number | string; s: number }): string {
     if (!clock) return "";
     if (clock.s < 0) return "HT";
     const mins = Math.max(0, Math.floor(clock.s / 60));
-    const period = clock.p >= 2 ? "2nd" : "1st";
+    const rawPeriod = String(clock.p).toUpperCase();
+    const period = rawPeriod.includes("2")
+      ? "2nd"
+      : rawPeriod.includes("1")
+        ? "1st"
+        : "1st";
     return `${mins}' (${period})`;
   }
 
