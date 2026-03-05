@@ -56,8 +56,6 @@ jobs:
         run: |
           doctl auth init -t ${{ secrets.DIGITALOCEAN_TOKEN }}
 
-          RUNNER_IP=$(curl -s http://checkip.amazonaws.com)
-          echo "Runner IP: $RUNNER_IP"
           FIREWALL_NAME="rlfantasy-prod-fw"
           FIREWALL_ID=$(doctl compute firewall list --format ID,Name --no-header | grep "$FIREWALL_NAME" | awk '{print $1}')
           if [ -z "$FIREWALL_ID" ]; then
@@ -65,18 +63,10 @@ jobs:
             exit 1
           fi
           echo "FIREWALL_ID=$FIREWALL_ID" >> $GITHUB_ENV
-          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
-          doctl compute firewall add-rules $FIREWALL_ID --inbound-rules "protocol:tcp,ports:22,address:$RUNNER_IP"
+          doctl compute firewall add-rules $FIREWALL_ID --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0,address:::/0"
           
-          echo "Waiting for firewall rule to propagate..."
-          for i in {1..15}; do
-            if nc -z -w 5 ${{ secrets.DROPLET_HOST }} 22; then
-              echo "Firewall is open and accepting connections!"
-              break
-            fi
-            echo "Still waiting for port 22..."
-            sleep 5
-          done
+          echo "Temporary firewall rule added. Waiting 10s for DO propagation..."
+          sleep 10
 
       - name: Sync deploy assets to droplet
         uses: appleboy/scp-action@v0.1.7
@@ -126,6 +116,6 @@ jobs:
         run: |
           doctl auth init -t ${{ secrets.DIGITALOCEAN_TOKEN }}
 
-          if [ -n "${{ env.FIREWALL_ID }}" ] && [ -n "${{ env.RUNNER_IP }}" ]; then
-            doctl compute firewall remove-rules ${{ env.FIREWALL_ID }} --inbound-rules "protocol:tcp,ports:22,address:${{ env.RUNNER_IP }}"
+          if [ -n "${{ env.FIREWALL_ID }}" ]; then
+            doctl compute firewall remove-rules ${{ env.FIREWALL_ID }} --inbound-rules "protocol:tcp,ports:22,address:0.0.0.0/0,address:::/0"
           fi
