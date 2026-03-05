@@ -202,6 +202,15 @@ This publishes:
 - `docker.io/<DOCKERHUB_USERNAME>/rlfantasy-api:sha-<commit>`
 - `docker.io/<DOCKERHUB_USERNAME>/rlfantasy-web:sha-<commit>`
 
+Troubleshooting (`npm ci` / lockfile):
+
+- This repository currently ignores `package-lock.json` in `.gitignore`.
+- CI checkout may not contain lockfiles, so strict `npm ci` can fail.
+- Dockerfiles are configured to:
+  - use `npm ci` when a lockfile exists
+  - fall back to `npm install` when lockfile is absent
+- If you want fully deterministic installs in CI, stop ignoring lockfiles and commit them.
+
 ---
 
 ## 9) Deploy to Production

@@ -12,7 +12,12 @@ COPY app/api/package*.json ./app/api/
 COPY packages/types/package*.json ./packages/types/
 COPY packages/types/tsconfig.json ./packages/types/
 COPY packages/types/src ./packages/types/src
-RUN --mount=type=cache,target=/root/.npm sh -lc 'cd app/api && npm ci && cd ../../packages/types && npm install && npm run build'
+RUN --mount=type=cache,target=/root/.npm sh -lc '\
+  cd app/api && \
+  if [ -f package-lock.json ]; then npm ci; else npm install; fi && \
+  cd ../../packages/types && \
+  if [ -f package-lock.json ]; then npm ci; else npm install; fi && \
+  npm run build'
 
 FROM base AS build
 ENV NODE_OPTIONS=--max-old-space-size=4096

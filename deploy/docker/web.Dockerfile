@@ -9,7 +9,9 @@ FROM base AS deps
 COPY app/client/package*.json ./app/client/
 COPY packages/types/package*.json ./packages/types/
 COPY packages/types/src ./packages/types/src
-RUN --mount=type=cache,target=/root/.npm cd app/client && npm ci
+RUN --mount=type=cache,target=/root/.npm sh -lc '\
+  cd app/client && \
+  if [ -f package-lock.json ]; then npm ci; else npm install; fi'
 
 FROM base AS build
 COPY --from=deps /workspace/app/client/node_modules ./app/client/node_modules
