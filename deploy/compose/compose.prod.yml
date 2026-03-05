@@ -35,7 +35,7 @@ services:
       - edge
 
   api:
-    image: ${API_IMAGE:?set API_IMAGE}
+    image: docker.io/${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME}/rlfantasy-api:latest
     container_name: rlfantasy-api
     restart: unless-stopped
     user: "10001:10001"
@@ -82,11 +82,12 @@ services:
       - traefik.http.routers.api.tls.certresolver=letsencrypt
       - traefik.http.routers.api.middlewares=secure-headers@file,compression@file
       - traefik.http.services.api.loadbalancer.server.port=5000
+      - com.centurylinklabs.watchtower.enable=true
     networks:
       - edge
 
   worker:
-    image: ${API_IMAGE:?set API_IMAGE}
+    image: docker.io/${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME}/rlfantasy-api:latest
     container_name: rlfantasy-worker
     restart: unless-stopped
     user: "10001:10001"
@@ -107,6 +108,8 @@ services:
       - FOOTY_STATS_USER_AGENT=${FOOTY_STATS_USER_AGENT:-}
     volumes:
       - worker_logs:/app/logs
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     depends_on:
       api:
         condition: service_healthy
@@ -114,7 +117,7 @@ services:
       - edge
 
   web:
-    image: ${WEB_IMAGE:?set WEB_IMAGE}
+    image: docker.io/${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME}/rlfantasy-web:latest
     container_name: rlfantasy-web
     restart: unless-stopped
     user: "10001:10001"
@@ -148,9 +151,27 @@ services:
       - traefik.http.routers.web.tls.certresolver=letsencrypt
       - traefik.http.routers.web.middlewares=secure-headers@file,compression@file
       - traefik.http.services.web.loadbalancer.server.port=3000
+      - com.centurylinklabs.watchtower.enable=true
     depends_on:
       api:
         condition: service_healthy
+    networks:
+      - edge
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: rlfantasy-watchtower
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_POLL_INTERVAL=30
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_ROLLING_RESTART=true
+      - REPO_USER=${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME}
+      - REPO_PASS=${DOCKERHUB_TOKEN:?set DOCKERHUB_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - edge
 
