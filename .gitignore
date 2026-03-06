@@ -50,3 +50,6 @@ package-lock.json
 
 # Claude
 .claude/
+
+# Local docs
+docs/
