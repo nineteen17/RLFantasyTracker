@@ -25,11 +25,22 @@ import type { PlayerHistoryResponse, PlayerMatchRawStats } from "@nrl/types";
 import type { SearchQuery } from "./players.schema";
 
 const OFFICIAL_MATCH_TYPES = ["nrl", "finals"] as const;
+const OFFICIAL_MATCH_TYPE_SET = new Set<string>(OFFICIAL_MATCH_TYPES);
 const PRESEASON_MATCH_TYPES = [
 	"pre-season-trial",
 	"world-club-challenge",
 	"allstar",
 ] as const;
+const PRESEASON_MATCH_TYPE_SET = new Set<string>(PRESEASON_MATCH_TYPES);
+const PRESEASON_MATCH_KEYWORDS = [
+	"pre-season",
+	"preseason",
+	"trial",
+	"allstar",
+	"all-star",
+	"world-club",
+] as const;
+const OFFICIAL_MATCH_KEYWORDS = ["nrl", "final"] as const;
 
 const NEXT_BREAK_EVEN_SQL = sql<number>`
 	(
@@ -311,14 +322,42 @@ function normalizeMatchStats(raw: Record<string, unknown>, row: {
 	};
 }
 
+function normalizeMatchTypeValue(value: string): string {
+	return value.trim().toLowerCase();
+}
+
+function classifyMatchType(value: string): "official" | "preseason" | "other" {
+	const normalized = normalizeMatchTypeValue(value);
+	if (!normalized) return "other";
+
+	if (OFFICIAL_MATCH_TYPE_SET.has(normalized)) return "official";
+	if (PRESEASON_MATCH_TYPE_SET.has(normalized)) return "preseason";
+
+	if (PRESEASON_MATCH_KEYWORDS.some((keyword) => normalized.includes(keyword))) {
+		return "preseason";
+	}
+	if (OFFICIAL_MATCH_KEYWORDS.some((keyword) => normalized.includes(keyword))) {
+		return "official";
+	}
+
+	return "other";
+}
+
+function shouldIncludeHistoryMatchType(
+	matchType: string,
+	includePreseason: boolean,
+): boolean {
+	const category = classifyMatchType(matchType);
+	if (includePreseason) {
+		return category === "official" || category === "preseason";
+	}
+	return category === "official";
+}
+
 export async function findPlayerHistoryById(
 	playerId: number,
 	includePreseason = false,
 ): Promise<PlayerHistoryResponse> {
-	const allowedMatchTypes = includePreseason
-		? [...OFFICIAL_MATCH_TYPES, ...PRESEASON_MATCH_TYPES]
-		: OFFICIAL_MATCH_TYPES;
-
 	const rows = await db
 		.select({
 			season: playerMatchStatsHistory.season,
@@ -339,21 +378,20 @@ export async function findPlayerHistoryById(
 			raw: playerMatchStatsHistory.raw,
 		})
 		.from(playerMatchStatsHistory)
-		.where(
-			and(
-				eq(playerMatchStatsHistory.playerId, playerId),
-				inArray(playerMatchStatsHistory.matchType, allowedMatchTypes),
-			),
-		)
+		.where(eq(playerMatchStatsHistory.playerId, playerId))
 		.orderBy(
 			asc(playerMatchStatsHistory.season),
 			asc(playerMatchStatsHistory.roundId),
 			asc(playerMatchStatsHistory.matchId),
 		);
 
-	const currentSeason = rows.length > 0 ? Math.max(...rows.map((r) => r.season)) : null;
+	const filteredRows = rows.filter((row) =>
+		shouldIncludeHistoryMatchType(row.matchType, includePreseason),
+	);
+	const currentSeason =
+		filteredRows.length > 0 ? Math.max(...filteredRows.map((r) => r.season)) : null;
 
-	const matches = rows.map((row) => {
+	const matches = filteredRows.map((row) => {
 		const raw = (row.raw ?? {}) as Record<string, unknown>;
 		const stats = normalizeMatchStats(raw, row);
 		const fantasyPoints = row.fantasyPoints ?? calculateFantasyPoints(stats);
@@ -363,7 +401,7 @@ export async function findPlayerHistoryById(
 			season: row.season,
 			roundId: row.roundId,
 			matchId: row.matchId,
-			matchType: row.matchType,
+			matchType: normalizeMatchTypeValue(row.matchType),
 			matchDate: row.matchDate ? row.matchDate.toISOString() : null,
 			squadId: row.squadId,
 			positionMatch: role.positionMatch,

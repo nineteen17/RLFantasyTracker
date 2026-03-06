@@ -5,14 +5,21 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, eq, gte, sql, type SQL } from "drizzle-orm";
 import db from "@database/data-source";
-import {
-	playerCurrent,
-	playerMatchStatsHistory,
-	playerRoundStats,
-	players,
-	rounds,
-} from "@database/schema";
+import { playerCurrent, players, rounds } from "@database/schema";
 import logger from "@src/logic/shared/utils/logger";
+import {
+	buildFootyStatsHeadersFromEnv,
+	dedupeBySeasonMatch,
+	dedupeBySeasonRound,
+	ensureRoundExists,
+	fetchPlayerStatsWithRetry,
+	normalizeError,
+	normalizeStats,
+	parseIntSafe,
+	sleep,
+	type NormalizedStatRow,
+	upsertHistoryRows,
+} from "@src/worker/history/footystats-history.ingest";
 
 interface CliOptions {
 	dryRun: boolean;
@@ -27,36 +34,10 @@ interface CliOptions {
 	applyTransferUpdates: boolean;
 }
 
-interface FootyStatsResponse {
-	stats?: unknown;
-}
-
-interface NormalizedStatRow {
-	season: number;
-	roundId: number;
-	playerId: number;
-	squadId: number;
-	matchId: number | null;
-	matchType: string;
-	matchDate: Date | null;
-	fantasyPoints: number | null;
-	timeOnGround: number | null;
-	tries: number | null;
-	tryAssists: number | null;
-	tackles: number | null;
-	missedTackles: number | null;
-	metresGained: number | null;
-	kickMetres: number | null;
-	errors: number | null;
-	offloads: number | null;
-	raw: Record<string, unknown>;
-}
-
 interface Failure {
 	playerId: number;
 	error: string;
 	attempts: number;
-	statusCode?: number;
 }
 
 interface RunSummary {
@@ -85,30 +66,6 @@ interface RunSummary {
 	roundStubsPlanned: number;
 	transferUpdatesApplied: number;
 	transferUpdatesPlanned: number;
-}
-
-const FOOTY_STATS_BASE_URL = "https://footystatistics.com/api/player-stats";
-
-function parseIntSafe(value: unknown): number | null {
-	if (typeof value === "number" && Number.isFinite(value)) {
-		return Math.trunc(value);
-	}
-	if (typeof value === "string" && value.trim() !== "") {
-		const parsed = Number.parseInt(value, 10);
-		return Number.isFinite(parsed) ? parsed : null;
-	}
-	return null;
-}
-
-function parseDateSafe(value: unknown): Date | null {
-	if (typeof value !== "string" || value.trim() === "") return null;
-	const isoLike = value.includes("T") ? value : value.replace(" ", "T");
-	const d = new Date(isoLike);
-	return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -193,252 +150,6 @@ function parseArgs(argv: string[]): CliOptions {
 	return options;
 }
 
-function matchTypePriority(matchType: string): number {
-	if (matchType === "nrl") return 3;
-	if (matchType === "finals") return 2;
-	if (matchType === "pre-season-trial") return 1;
-	return 0;
-}
-
-function shouldReplacePreferredRow(
-	current: NormalizedStatRow,
-	candidate: NormalizedStatRow,
-): boolean {
-	const currentPriority = matchTypePriority(current.matchType);
-	const candidatePriority = matchTypePriority(candidate.matchType);
-	if (candidatePriority !== currentPriority) {
-		return candidatePriority > currentPriority;
-	}
-	if (current.fantasyPoints == null && candidate.fantasyPoints != null) {
-		return true;
-	}
-	if (current.matchDate == null && candidate.matchDate != null) {
-		return true;
-	}
-	if (current.matchDate && candidate.matchDate) {
-		return candidate.matchDate.getTime() > current.matchDate.getTime();
-	}
-	if (current.matchId == null && candidate.matchId != null) {
-		return true;
-	}
-	return false;
-}
-
-function dedupeBySeasonRound(rows: NormalizedStatRow[]): {
-	deduped: NormalizedStatRow[];
-	skipped: number;
-} {
-	const byKey = new Map<string, NormalizedStatRow>();
-	let skipped = 0;
-
-	for (const row of rows) {
-		const key = `${row.season}:${row.roundId}`;
-		const existing = byKey.get(key);
-		if (!existing) {
-			byKey.set(key, row);
-			continue;
-		}
-
-		if (shouldReplacePreferredRow(existing, row)) {
-			byKey.set(key, row);
-			skipped++;
-			continue;
-		}
-
-		skipped++;
-	}
-
-	return { deduped: Array.from(byKey.values()), skipped };
-}
-
-function dedupeBySeasonMatch(rows: NormalizedStatRow[]): {
-	deduped: NormalizedStatRow[];
-	skipped: number;
-	droppedNoMatchId: number;
-} {
-	const byKey = new Map<string, NormalizedStatRow>();
-	let skipped = 0;
-	let droppedNoMatchId = 0;
-
-	for (const row of rows) {
-		if (row.matchId == null) {
-			droppedNoMatchId++;
-			continue;
-		}
-
-		const key = `${row.season}:${row.matchId}:${row.playerId}`;
-		const existing = byKey.get(key);
-		if (!existing) {
-			byKey.set(key, row);
-			continue;
-		}
-
-		if (shouldReplacePreferredRow(existing, row)) {
-			byKey.set(key, row);
-			skipped++;
-			continue;
-		}
-
-		skipped++;
-	}
-
-	return { deduped: Array.from(byKey.values()), skipped, droppedNoMatchId };
-}
-
-function normalizeStats(
-	playerId: number,
-	rawStats: unknown[],
-): { validRows: NormalizedStatRow[]; invalidCount: number } {
-	const validRows: NormalizedStatRow[] = [];
-	let invalidCount = 0;
-
-	for (const raw of rawStats) {
-		if (!raw || typeof raw !== "object") {
-			invalidCount++;
-			continue;
-		}
-
-		const row = raw as Record<string, unknown>;
-		const season = parseIntSafe(row.year);
-		const roundId = parseIntSafe(row.round_id);
-		const squadId = parseIntSafe(row.squad_id);
-
-		if (!season || !roundId || !squadId) {
-			invalidCount++;
-			continue;
-		}
-
-		const rowPlayerId = parseIntSafe(row.player_id) ?? playerId;
-		if (rowPlayerId !== playerId) {
-			invalidCount++;
-			continue;
-		}
-
-		validRows.push({
-			season,
-			roundId,
-			playerId: rowPlayerId,
-			squadId,
-			matchId: parseIntSafe(row.match_id),
-			matchType: typeof row.match_type === "string" ? row.match_type : "unknown",
-			matchDate: parseDateSafe(row.match_date),
-			fantasyPoints: parseIntSafe(row.fantasy_points),
-			timeOnGround: parseIntSafe(row.time_on_ground),
-			tries: parseIntSafe(row.tries),
-			tryAssists: parseIntSafe(row.try_assists),
-			tackles: parseIntSafe(row.tackles),
-			missedTackles: parseIntSafe(row.missed_tackles),
-			metresGained: parseIntSafe(row.metres_gained),
-			kickMetres: parseIntSafe(row.kick_metres),
-			errors: parseIntSafe(row.errors),
-			offloads: parseIntSafe(row.offloads),
-			raw: row,
-		});
-	}
-
-	return { validRows, invalidCount };
-}
-
-function normalizeError(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	return String(error);
-}
-
-function isRetryableStatus(status: number): boolean {
-	return status === 429 || status >= 500;
-}
-
-async function fetchPlayerStatsWithRetry(
-	playerId: number,
-	options: CliOptions,
-	headers: HeadersInit,
-): Promise<{ response: FootyStatsResponse; attempts: number }> {
-	let attempt = 0;
-	let lastError: unknown;
-
-	while (attempt <= options.maxRetries) {
-		attempt++;
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
-
-		try {
-			const url = `${FOOTY_STATS_BASE_URL}?player_id=${playerId}`;
-			const res = await fetch(url, {
-				method: "GET",
-				headers,
-				signal: controller.signal,
-			});
-			clearTimeout(timeout);
-
-			if (!res.ok) {
-				const status = res.status;
-				const body = await res.text().catch(() => "");
-				if (isRetryableStatus(status) && attempt <= options.maxRetries) {
-					const backoff = Math.min(30000, 1000 * 2 ** (attempt - 1));
-					const jitter = Math.floor(Math.random() * 250);
-					logger.warn(
-						`Retryable HTTP ${status} for player ${playerId} (attempt ${attempt}/${options.maxRetries + 1}). Retrying in ${backoff + jitter}ms.`,
-					);
-					await sleep(backoff + jitter);
-					continue;
-				}
-				throw new Error(
-					`HTTP ${status} for player ${playerId}: ${res.statusText}${body ? ` | ${body.slice(0, 180)}` : ""}`,
-				);
-			}
-
-			const json = (await res.json()) as FootyStatsResponse;
-			return { response: json, attempts: attempt };
-		} catch (error) {
-			clearTimeout(timeout);
-			lastError = error;
-			const isAbort = error instanceof Error && error.name === "AbortError";
-			const isNetwork = error instanceof TypeError || isAbort;
-			if (isNetwork && attempt <= options.maxRetries) {
-				const backoff = Math.min(30000, 1000 * 2 ** (attempt - 1));
-				const jitter = Math.floor(Math.random() * 250);
-				logger.warn(
-					`Network/timeout error for player ${playerId} (attempt ${attempt}/${options.maxRetries + 1}): ${normalizeError(error)}. Retrying in ${backoff + jitter}ms.`,
-				);
-				await sleep(backoff + jitter);
-				continue;
-			}
-			throw error;
-		}
-	}
-
-	throw lastError instanceof Error ? lastError : new Error(String(lastError));
-}
-
-async function ensureRoundExists(
-	roundId: number,
-	seasonHint: number,
-	knownRoundIds: Set<number>,
-	dryRun: boolean,
-): Promise<"none" | "planned" | "inserted"> {
-	if (knownRoundIds.has(roundId)) return "none";
-
-	if (!dryRun) {
-		await db
-			.insert(rounds)
-			.values({
-				roundId,
-				season: seasonHint,
-				roundDisplay: `Round ${roundId}`,
-				raw: {
-					source: "footystatistics-backfill",
-					note: "Stub round inserted for historical player stats backfill",
-				},
-			})
-			.onConflictDoNothing();
-		knownRoundIds.add(roundId);
-		return "inserted";
-	}
-
-	knownRoundIds.add(roundId);
-	return "planned";
-}
-
 async function writeReports(
 	options: CliOptions,
 	summary: RunSummary,
@@ -458,16 +169,24 @@ async function writeReports(
 	logger.info(`Wrote failure report: ${failuresPath}`);
 }
 
+function sortByEarliestMatch(a: NormalizedStatRow, b: NormalizedStatRow): number {
+	const dateDiff =
+		(a.matchDate?.getTime() ?? Number.MAX_SAFE_INTEGER) -
+		(b.matchDate?.getTime() ?? Number.MAX_SAFE_INTEGER);
+	if (dateDiff !== 0) return dateDiff;
+	if (a.roundId !== b.roundId) return a.roundId - b.roundId;
+	return (a.matchId ?? Number.MAX_SAFE_INTEGER) - (b.matchId ?? Number.MAX_SAFE_INTEGER);
+}
+
 async function main() {
 	const options = parseArgs(process.argv.slice(2));
 
-	const cookie = process.env.FOOTY_STATS_COOKIE;
-	const xsrf = process.env.FOOTY_STATS_XSRF_TOKEN;
-	const userAgent = process.env.FOOTY_STATS_USER_AGENT;
-
-	if (!cookie) throw new Error("FOOTY_STATS_COOKIE is required");
-	if (!xsrf) throw new Error("FOOTY_STATS_XSRF_TOKEN is required");
-	if (!userAgent) throw new Error("FOOTY_STATS_USER_AGENT is required");
+	const auth = buildFootyStatsHeadersFromEnv();
+	if (!auth.headers) {
+		throw new Error(
+			`Missing required FootyStats auth env vars: ${auth.missing.join(", ")}`,
+		);
+	}
 
 	const currentSeasonResult = await db
 		.select({
@@ -499,22 +218,12 @@ async function main() {
 		.orderBy(asc(players.playerId));
 
 	const queue = options.limit ? playerRows.slice(0, options.limit) : playerRows;
-
-	const existingRounds = await db
-		.select({ roundId: rounds.roundId })
-		.from(rounds);
-	const knownRoundIds = new Set(existingRounds.map((r) => r.roundId));
+	const existingRounds = await db.select({ roundId: rounds.roundId }).from(rounds);
+	const knownRoundIds = new Set(existingRounds.map((row) => row.roundId));
 
 	logger.info(
 		`Footystats backfill started (dryRun=${options.dryRun}, players=${queue.length}, referenceSeason=${referenceSeason})`,
 	);
-
-	const headers: HeadersInit = {
-		Cookie: cookie,
-		"X-XSRF-TOKEN": xsrf,
-		"User-Agent": userAgent,
-		Accept: "application/json",
-	};
 
 	const startedAt = new Date();
 	const failures: Failure[] = [];
@@ -546,13 +255,18 @@ async function main() {
 		try {
 			const { response, attempts } = await fetchPlayerStatsWithRetry(
 				player.playerId,
-				options,
-				headers,
+				{
+					timeoutMs: options.timeoutMs,
+					maxRetries: options.maxRetries,
+				},
+				auth.headers,
 			);
 			summaryAccumulator.requestsSucceeded++;
 
 			if (!Array.isArray(response.stats)) {
-				throw new Error(`Invalid response shape for player ${player.playerId}: missing stats[]`);
+				throw new Error(
+					`Invalid response shape for player ${player.playerId}: missing stats[]`,
+				);
 			}
 
 			const { validRows, invalidCount } = normalizeStats(
@@ -574,28 +288,29 @@ async function main() {
 				continue;
 			}
 
-				const {
-					deduped: matchRows,
-					skipped: matchRowsSkipped,
-					droppedNoMatchId,
-				} = dedupeBySeasonMatch(validRows);
-				summaryAccumulator.matchRowsAfterDedupe += matchRows.length;
-				summaryAccumulator.matchRowsSkippedByDedupe += matchRowsSkipped;
-				summaryAccumulator.matchRowsDroppedNoMatchId += droppedNoMatchId;
+			const {
+				deduped: matchRows,
+				skipped: matchRowsSkipped,
+				droppedNoMatchId,
+			} = dedupeBySeasonMatch(validRows);
+			summaryAccumulator.matchRowsAfterDedupe += matchRows.length;
+			summaryAccumulator.matchRowsSkippedByDedupe += matchRowsSkipped;
+			summaryAccumulator.matchRowsDroppedNoMatchId += droppedNoMatchId;
 
-				const {
-					deduped: roundRows,
-					skipped: roundRowsSkipped,
-				} = dedupeBySeasonRound(validRows);
-				summaryAccumulator.roundRowsAfterDedupe += roundRows.length;
-				summaryAccumulator.roundRowsSkippedByDedupe += roundRowsSkipped;
+			const {
+				deduped: roundRows,
+				skipped: roundRowsSkipped,
+			} = dedupeBySeasonRound(validRows);
+			summaryAccumulator.roundRowsAfterDedupe += roundRows.length;
+			summaryAccumulator.roundRowsSkippedByDedupe += roundRowsSkipped;
 
-				for (const row of roundRows) {
-					const inserted = await ensureRoundExists(
-						row.roundId,
-						row.season,
+			for (const row of roundRows) {
+				const inserted = await ensureRoundExists(
+					row.roundId,
+					row.season,
 					knownRoundIds,
 					options.dryRun,
+					{ sourceTag: "footystatistics-backfill" },
 				);
 				if (inserted === "inserted") {
 					summaryAccumulator.roundStubsInserted++;
@@ -604,133 +319,24 @@ async function main() {
 				}
 			}
 
-				if (!options.dryRun) {
-					const matchValues = matchRows
-						.filter((row) => row.matchId != null)
-						.map((row) => ({
-							season: row.season,
-							roundId: row.roundId,
-							matchId: row.matchId as number,
-							playerId: row.playerId,
-							squadId: row.squadId,
-							matchType: row.matchType,
-							matchDate: row.matchDate,
-							fantasyPoints: row.fantasyPoints,
-							timeOnGround: row.timeOnGround,
-							tries: row.tries,
-							tryAssists: row.tryAssists,
-							tackles: row.tackles,
-							missedTackles: row.missedTackles,
-							metresGained: row.metresGained,
-							kickMetres: row.kickMetres,
-							errors: row.errors,
-							offloads: row.offloads,
-							raw: row.raw,
-						}));
-
-					const roundValues = roundRows.map((row) => ({
-						season: row.season,
-						roundId: row.roundId,
-						playerId: row.playerId,
-						matchId: row.matchId,
-						fantasyPoints: row.fantasyPoints,
-						timeOnGround: row.timeOnGround,
-						tries: row.tries,
-						tryAssists: row.tryAssists,
-						tackles: row.tackles,
-						missedTackles: row.missedTackles,
-						metresGained: row.metresGained,
-						kickMetres: row.kickMetres,
-						errors: row.errors,
-						offloads: row.offloads,
-						raw: row.raw,
-					}));
-
-					await db.transaction(async (tx) => {
-						if (matchValues.length > 0) {
-							await tx
-								.insert(playerMatchStatsHistory)
-								.values(matchValues)
-								.onConflictDoUpdate({
-									target: [
-										playerMatchStatsHistory.season,
-										playerMatchStatsHistory.matchId,
-										playerMatchStatsHistory.playerId,
-									],
-									set: {
-										roundId: sql`excluded.round_id`,
-										squadId: sql`excluded.squad_id`,
-										matchType: sql`excluded.match_type`,
-										matchDate: sql`excluded.match_date`,
-										fantasyPoints: sql`excluded.fantasy_points`,
-										timeOnGround: sql`excluded.time_on_ground`,
-										tries: sql`excluded.tries`,
-										tryAssists: sql`excluded.try_assists`,
-										tackles: sql`excluded.tackles`,
-										missedTackles: sql`excluded.missed_tackles`,
-										metresGained: sql`excluded.metres_gained`,
-										kickMetres: sql`excluded.kick_metres`,
-										errors: sql`excluded.errors`,
-										offloads: sql`excluded.offloads`,
-										raw: sql`excluded.raw`,
-										updatedAt: sql`now()`,
-									},
-								});
-						}
-
-						if (roundValues.length > 0) {
-							await tx
-								.insert(playerRoundStats)
-								.values(roundValues)
-								.onConflictDoUpdate({
-									target: [
-										playerRoundStats.season,
-										playerRoundStats.roundId,
-										playerRoundStats.playerId,
-									],
-									set: {
-										matchId: sql`excluded.match_id`,
-										fantasyPoints: sql`excluded.fantasy_points`,
-										timeOnGround: sql`excluded.time_on_ground`,
-										tries: sql`excluded.tries`,
-										tryAssists: sql`excluded.try_assists`,
-										tackles: sql`excluded.tackles`,
-										missedTackles: sql`excluded.missed_tackles`,
-										metresGained: sql`excluded.metres_gained`,
-										kickMetres: sql`excluded.kick_metres`,
-										errors: sql`excluded.errors`,
-										offloads: sql`excluded.offloads`,
-										raw: sql`excluded.raw`,
-										updatedAt: sql`now()`,
-									},
-								});
-						}
-					});
-				}
-				if (!options.dryRun) {
-					summaryAccumulator.matchRowsUpserted += matchRows.length;
-					summaryAccumulator.roundRowsUpserted += roundRows.length;
-				}
+			const upserted = await upsertHistoryRows({
+				matchRows,
+				roundRows,
+				dryRun: options.dryRun,
+			});
+			summaryAccumulator.matchRowsUpserted += upserted.matchRowsUpserted;
+			summaryAccumulator.roundRowsUpserted += upserted.roundRowsUpserted;
 
 			if (options.applyTransferUpdates) {
-				const sortByEarliestMatch = (a: NormalizedStatRow, b: NormalizedStatRow) => {
-					const dateDiff =
-						(a.matchDate?.getTime() ?? Number.MAX_SAFE_INTEGER) -
-						(b.matchDate?.getTime() ?? Number.MAX_SAFE_INTEGER);
-					if (dateDiff !== 0) return dateDiff;
-					if (a.roundId !== b.roundId) return a.roundId - b.roundId;
-					return (a.matchId ?? Number.MAX_SAFE_INTEGER) - (b.matchId ?? Number.MAX_SAFE_INTEGER);
-				};
-
 				const transferSeasons = [referenceSeason, referenceSeason - 1];
 				let candidate: NormalizedStatRow | undefined;
 
 				for (const season of transferSeasons) {
-					const seasonRows = validRows.filter((r) => r.season === season);
+					const seasonRows = validRows.filter((row) => row.season === season);
 					if (seasonRows.length === 0) continue;
 
 					const primaryRows = seasonRows
-						.filter((r) => r.matchType === "nrl" || r.matchType === "finals")
+						.filter((row) => row.matchType === "nrl" || row.matchType === "finals")
 						.sort(sortByEarliestMatch);
 					if (primaryRows.length > 0) {
 						candidate = primaryRows[0];
@@ -743,6 +349,7 @@ async function main() {
 						break;
 					}
 				}
+
 				const canUpdateOriginal =
 					candidate &&
 					candidate.squadId !== player.squadId &&
@@ -763,11 +370,11 @@ async function main() {
 				}
 			}
 
-				summaryAccumulator.playersProcessed++;
-				logger.info(
-					`Player ${playerLabel}: fetched=${validRows.length}, matchRows=${matchRows.length}, roundRows=${roundRows.length}, invalid=${invalidCount}, attempts=${attempts}`,
-				);
-			} catch (error) {
+			summaryAccumulator.playersProcessed++;
+			logger.info(
+				`Player ${playerLabel}: fetched=${validRows.length}, matchRows=${matchRows.length}, roundRows=${roundRows.length}, invalid=${invalidCount}, attempts=${attempts}`,
+			);
+		} catch (error) {
 			summaryAccumulator.playersFailed++;
 			summaryAccumulator.requestsFailed++;
 			failures.push({

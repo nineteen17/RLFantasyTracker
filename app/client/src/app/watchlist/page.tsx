@@ -207,7 +207,7 @@ export default function WatchlistPage() {
                     />
                     <div className="min-w-0">
                       <Link
-                        href={`/players/${player.playerId}?from=watchlist`}
+                        href={`/players/${player.playerId}?returnTo=%2Fwatchlist`}
                         className="block line-clamp-2 text-sm font-medium leading-tight text-accent-light hover:underline"
                       >
                         {player.fullName}
@@ -308,7 +308,7 @@ export default function WatchlistPage() {
                       />
                       <div className="min-w-0 text-left">
                         <Link
-                          href={`/players/${player.playerId}?from=watchlist`}
+                          href={`/players/${player.playerId}?returnTo=%2Fwatchlist`}
                           className="block line-clamp-2 font-medium leading-tight text-accent-light hover:underline"
                         >
                           {player.fullName}

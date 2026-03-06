@@ -45,6 +45,16 @@ type Tab = (typeof TABS)[number]["key"];
 type ScoringSeason = "all" | number;
 type ScoringSubTab = (typeof SCORING_SUB_TABS)[number]["key"];
 const EMPTY_HISTORY_MATCHES: PlayerHistoryMatch[] = [];
+const OFFICIAL_MATCH_TYPE_SET = new Set(["nrl", "finals"]);
+const PRESEASON_MATCH_KEYWORDS = [
+  "pre-season",
+  "preseason",
+  "trial",
+  "allstar",
+  "all-star",
+  "world-club",
+];
+const OFFICIAL_MATCH_KEYWORDS = ["nrl", "final"];
 const PRESEASON_PREF_STORAGE_KEY = "nrl_scoring_include_preseason_v1";
 const TAB_QUERY_KEY = "tab";
 const SUBTAB_QUERY_KEY = "subtab";
@@ -75,6 +85,58 @@ function parseBooleanParam(value: string | null): boolean | null {
   if (normalized === "1" || normalized === "true") return true;
   if (normalized === "0" || normalized === "false") return false;
   return null;
+}
+
+function normalizeMatchType(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function classifyMatchType(value: string): "official" | "preseason" | "other" {
+  const normalized = normalizeMatchType(value);
+  if (!normalized) return "other";
+
+  if (OFFICIAL_MATCH_TYPE_SET.has(normalized)) return "official";
+  if (PRESEASON_MATCH_KEYWORDS.some((keyword) => normalized.includes(keyword))) {
+    return "preseason";
+  }
+  if (OFFICIAL_MATCH_KEYWORDS.some((keyword) => normalized.includes(keyword))) {
+    return "official";
+  }
+  return "other";
+}
+
+function shouldIncludeByScope(matchType: string, includePreseason: boolean): boolean {
+  const category = classifyMatchType(matchType);
+  if (includePreseason) {
+    return category === "official" || category === "preseason";
+  }
+  return category === "official";
+}
+
+function resolveBackLink(
+  returnToParam: string | null,
+  fromWatchlist: boolean,
+): { href: string; label: string } {
+  if (returnToParam) {
+    if (/^\/teams\/\d+$/.test(returnToParam)) {
+      return { href: returnToParam, label: "Back to Team" };
+    }
+    if (returnToParam === "/watchlist") {
+      return { href: returnToParam, label: "Back to Watchlist" };
+    }
+    if (/^\/live\/\d+\/\d+$/.test(returnToParam)) {
+      return { href: returnToParam, label: "Back to Match" };
+    }
+    if (/^\/live(?:\?round=\d+)?$/.test(returnToParam)) {
+      return { href: returnToParam, label: "Back to Live" };
+    }
+  }
+
+  if (fromWatchlist) {
+    return { href: "/watchlist", label: "Back to Watchlist" };
+  }
+
+  return { href: "/players/search", label: "Back to Search" };
 }
 
 function PlayerPageContent({
@@ -116,13 +178,20 @@ function PlayerPageContent({
     includePreseason,
   );
   const allHistoryMatches = historyData?.matches ?? EMPTY_HISTORY_MATCHES;
+  const scopedHistoryMatches = useMemo(
+    () =>
+      allHistoryMatches.filter((match: PlayerHistoryMatch) =>
+        shouldIncludeByScope(match.matchType, includePreseason),
+      ),
+    [allHistoryMatches, includePreseason],
+  );
   const availableSeasons = useMemo<number[]>(() => {
     const seasons = new Set<number>();
-    for (const match of allHistoryMatches) {
+    for (const match of scopedHistoryMatches) {
       seasons.add(match.season);
     }
     return [...seasons].sort((a, b) => b - a);
-  }, [allHistoryMatches]);
+  }, [scopedHistoryMatches]);
   const resolvedScoringSeason =
     scoringSeason === "all"
       ? "all"
@@ -131,8 +200,8 @@ function PlayerPageContent({
         : "all";
   const scoringMatches =
     resolvedScoringSeason === "all"
-      ? allHistoryMatches
-      : allHistoryMatches.filter(
+      ? scopedHistoryMatches
+      : scopedHistoryMatches.filter(
           (m: PlayerHistoryMatch) => m.season === resolvedScoringSeason,
         );
   const scoringScopeLabel =
@@ -142,13 +211,12 @@ function PlayerPageContent({
   const scoringSeasonSelectValue =
     resolvedScoringSeason === "all" ? "all" : String(resolvedScoringSeason);
   const fromSearch = searchParams.get("from") === "search";
+  const fromWatchlist = searchParams.get("from") === "watchlist";
   const returnToParam = searchParams.get("returnTo");
-  const teamReturnTo =
-    returnToParam && /^\/teams\/\d+$/.test(returnToParam)
-      ? returnToParam
-      : null;
-  const backHref = teamReturnTo ?? "/players/search";
-  const backLabel = teamReturnTo ? "Back to Team" : "Back to Search";
+  const { href: backHref, label: backLabel } = resolveBackLink(
+    returnToParam,
+    fromWatchlist,
+  );
   const scoringSummary = useMemo(() => {
     if (scoringMatches.length === 0) return null;
     const points = scoringMatches.map(
@@ -417,7 +485,7 @@ function PlayerPageContent({
                 {activeScoringSubTab === "trends" && (
                   <ScoreHistory
                     matches={scoringMatches}
-                    allMatches={allHistoryMatches}
+                    allMatches={scopedHistoryMatches}
                     isLoading={historyLoading}
                     scopeLabel={scoringScopeLabel}
                   />

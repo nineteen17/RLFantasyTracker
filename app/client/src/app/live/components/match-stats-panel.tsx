@@ -12,6 +12,7 @@ interface MatchStatsPanelProps {
   awaySquadName: string;
   homePlayers: LivePlayerStat[];
   awayPlayers: LivePlayerStat[];
+  returnTo?: string;
   isLoading?: boolean;
 }
 
@@ -28,6 +29,7 @@ export function MatchStatsPanel({
   awaySquadName,
   homePlayers,
   awayPlayers,
+  returnTo,
   isLoading = false,
 }: MatchStatsPanelProps) {
   const [selectedTeam, setSelectedTeam] = useState<"home" | "away">("home");
@@ -86,7 +88,11 @@ export function MatchStatsPanel({
         </div>
       </div>
 
-      <TeamStatsTable teamName={selectedTeamName} players={selectedPlayers} />
+      <TeamStatsTable
+        teamName={selectedTeamName}
+        players={selectedPlayers}
+        returnTo={returnTo}
+      />
     </div>
   );
 }
@@ -122,9 +128,11 @@ function StatCell({ statKey, value }: { statKey: string; value: number }) {
 function TeamStatsTable({
   teamName,
   players,
+  returnTo,
 }: {
   teamName: string;
   players: LivePlayerStat[];
+  returnTo?: string;
 }) {
   if (players.length === 0) return null;
 
@@ -186,7 +194,7 @@ function TeamStatsTable({
                         className="h-7 w-7 md:h-8 md:w-8"
                       />
                       <Link
-                        href={`/players/${player.playerId}`}
+                        href={`/players/${player.playerId}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
                         className="max-w-[82px] truncate text-xs text-accent-light hover:underline md:max-w-none md:text-sm"
                       >
                         <span className="md:hidden">

@@ -17,7 +17,8 @@
     "db:migrate": "dotenv -e .env -- drizzle-kit migrate",
     "db:studio": "dotenv -e .env -- drizzle-kit studio",
     "sync": "NODE_PRESERVE_SYMLINKS=1 dotenv -e .env -- tsx src/worker/sync.ts",
-    "backfill:footystats": "NODE_PRESERVE_SYMLINKS=1 dotenv -e .env -- tsx src/scripts/backfill-footystats-history.ts"
+    "backfill:footystats": "NODE_PRESERVE_SYMLINKS=1 dotenv -e .env -- tsx src/scripts/backfill-footystats-history.ts",
+    "sync:history:official": "NODE_PRESERVE_SYMLINKS=1 dotenv -e .env -- tsx src/scripts/sync-official-history-incremental.ts"
   },
   "repository": {
     "type": "git",

@@ -158,6 +158,7 @@ export default function MatchDetailPage({
           awaySquadName={match.awaySquadName}
           homePlayers={homePlayers}
           awayPlayers={awayPlayers}
+          returnTo={`/live/${roundId}/${matchId}`}
           isLoading={statsLoading}
         />
       </div>

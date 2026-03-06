@@ -10,6 +10,35 @@ interface DetailedStatsProps {
   isLoading: boolean;
 }
 
+const PRESEASON_MATCH_KEYWORDS = [
+  "pre-season",
+  "preseason",
+  "trial",
+  "allstar",
+  "all-star",
+  "world-club",
+];
+
+function normalizeMatchType(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function isPreseasonMatchType(matchType: string): boolean {
+  const normalized = normalizeMatchType(matchType);
+  if (!normalized) return false;
+  return PRESEASON_MATCH_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function roundLabel(match: PlayerHistoryMatch): string {
+  return `${isPreseasonMatchType(match.matchType) ? "PS" : "R"}${match.roundId}`;
+}
+
+function toTimestamp(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
 function StatCell({ statKey, value }: { statKey: string; value: number }) {
   const pts = statFantasyPoints(statKey, value);
 
@@ -44,13 +73,21 @@ export function DetailedStats({ matches, isLoading }: DetailedStatsProps) {
 
   const orderedMatches = useMemo(() => {
     if (!matches || matches.length === 0) return [];
-    if (!hasMultiSeason) return matches;
     return [...matches].sort((a, b) => {
+      const aTs = toTimestamp(a.matchDate);
+      const bTs = toTimestamp(b.matchDate);
+
+      if (aTs != null && bTs != null && aTs !== bTs) {
+        return bTs - aTs;
+      }
+      if (aTs != null && bTs == null) return -1;
+      if (aTs == null && bTs != null) return 1;
+
       if (a.season !== b.season) return b.season - a.season;
       if (a.roundId !== b.roundId) return b.roundId - a.roundId;
       return b.matchId - a.matchId;
     });
-  }, [hasMultiSeason, matches]);
+  }, [matches]);
 
   if (isLoading) return <Skeleton className="h-48" />;
   if (!matches || matches.length === 0) return null;
@@ -63,7 +100,7 @@ export function DetailedStats({ matches, isLoading }: DetailedStatsProps) {
           <thead>
             <tr className="text-xs text-muted md:text-sm">
               <th className="pb-2 text-left font-medium sticky left-0 bg-surface z-10">
-                {hasMultiSeason ? "Season / Round" : "Round"}
+                {hasMultiSeason ? "Season / Match" : "Match"}
               </th>
               <th className="pb-2 px-1.5 text-center font-medium text-accent-light">PTS</th>
               <th className="pb-2 px-1.5 text-center font-medium" title="Minutes Played">MP</th>
@@ -87,7 +124,9 @@ export function DetailedStats({ matches, isLoading }: DetailedStatsProps) {
                   className="border-t border-border/50 hover:bg-surface-alt/30"
                 >
                   <td className="py-1.5 pr-2 font-medium whitespace-nowrap sticky left-0 bg-surface z-10">
-                    {hasMultiSeason ? `${match.season} · R${match.roundId}` : `R${match.roundId}`}
+                    {hasMultiSeason
+                      ? `${match.season} · ${roundLabel(match)}`
+                      : roundLabel(match)}
                   </td>
                   <td className="py-1.5 px-1.5 text-center tabular-nums font-bold text-accent-light">
                     {match.fantasyPoints}

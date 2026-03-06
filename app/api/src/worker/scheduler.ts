@@ -3,14 +3,24 @@ import logger from "@src/logic/shared/utils/logger";
 import { fetchUpstream } from "./upstream/client";
 import type { UpstreamRound, UpstreamMatch } from "./upstream/types";
 import { runFullSync, runLightSync } from "./syncService";
+import { runOfficialHistoryIncrementalSync } from "./history/official-history.incremental";
 
 const POLL_INTERVAL_ACTIVE = 5 * 60 * 1000; // 5 minutes during active round
 const POLL_INTERVAL_IDLE = 30 * 60 * 1000; // 30 minutes when no active round
+const ENABLE_HISTORY_SYNC =
+	process.env.ENABLE_HISTORY_SYNC === undefined
+		? true
+		: process.env.ENABLE_HISTORY_SYNC === "true";
+const HISTORY_SYNC_LOOKBACK_ROUNDS = Number.parseInt(
+	process.env.HISTORY_SYNC_LOOKBACK_ROUNDS ?? "3",
+	10,
+);
 
 /** In-memory match status tracker to detect transitions */
 let previousStatuses = new Map<number, string>();
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let syncing = false;
+let historySyncing = false;
 
 /**
  * Start the sync scheduler:
@@ -82,9 +92,35 @@ async function poll(): Promise<void> {
 					`[Scheduler] Round ${activeRound.id} fully complete — running full sync`,
 				);
 				await safeSyncRun("round-complete", () => runFullSync());
+				if (ENABLE_HISTORY_SYNC) {
+					await safeHistorySyncRun("round-complete", async () => {
+						await runOfficialHistoryIncrementalSync({
+							reason: "round-complete",
+							lookbackRounds:
+								Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
+								HISTORY_SYNC_LOOKBACK_ROUNDS > 0
+									? HISTORY_SYNC_LOOKBACK_ROUNDS
+									: 3,
+							targetRoundId: activeRound.id,
+						});
+					});
+				}
 			} else {
 				logger.info("[Scheduler] Running light sync after match completion");
 				await safeSyncRun("match-complete", () => runLightSync());
+				if (ENABLE_HISTORY_SYNC) {
+					await safeHistorySyncRun("match-complete", async () => {
+						await runOfficialHistoryIncrementalSync({
+							reason: "match-complete",
+							lookbackRounds:
+								Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
+								HISTORY_SYNC_LOOKBACK_ROUNDS > 0
+									? HISTORY_SYNC_LOOKBACK_ROUNDS
+									: 3,
+							targetRoundId: activeRound.id,
+						});
+					});
+				}
 			}
 		} else if (previousStatuses.size === 0) {
 			// First poll after startup — log current state
@@ -142,6 +178,35 @@ async function safeSyncRun(
 		);
 	} finally {
 		syncing = false;
+	}
+}
+
+async function safeHistorySyncRun(
+	reason: string,
+	syncFn: () => Promise<unknown>,
+): Promise<void> {
+	if (historySyncing) {
+		logger.warn(
+			`[Scheduler] History sync already in progress — skipping (reason: ${reason})`,
+		);
+		return;
+	}
+
+	historySyncing = true;
+	const start = Date.now();
+
+	try {
+		logger.info(`[Scheduler] History sync started (reason: ${reason})`);
+		await syncFn();
+		logger.info(
+			`[Scheduler] History sync complete (reason: ${reason}, took ${Date.now() - start}ms)`,
+		);
+	} catch (error) {
+		logger.error(
+			`[Scheduler] History sync failed (reason: ${reason}): ${error instanceof Error ? error.message : String(error)}`,
+		);
+	} finally {
+		historySyncing = false;
 	}
 }
 
