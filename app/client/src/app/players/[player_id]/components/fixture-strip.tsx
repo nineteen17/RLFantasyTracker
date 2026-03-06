@@ -5,6 +5,7 @@ import type { FixtureStripItem } from "@nrl/types";
 
 interface FixtureStripProps {
   fixtures: FixtureStripItem[];
+  byeRounds: number[];
   squadId: number;
 }
 
@@ -14,7 +15,11 @@ function kickoffMs(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function FixtureStrip({ fixtures, squadId }: FixtureStripProps) {
+type RoundCard =
+  | { kind: "fixture"; roundId: number; fixture: FixtureStripItem }
+  | { kind: "bye"; roundId: number };
+
+export function FixtureStrip({ fixtures, byeRounds, squadId }: FixtureStripProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentRef = useRef<HTMLDivElement>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -24,8 +29,42 @@ export function FixtureStrip({ fixtures, squadId }: FixtureStripProps) {
     return () => window.clearInterval(id);
   }, []);
 
+  const normalizedByeRounds = useMemo(
+    () => [...new Set(byeRounds)].sort((a, b) => a - b),
+    [byeRounds],
+  );
+  const byeRoundSet = useMemo(() => new Set(normalizedByeRounds), [normalizedByeRounds]);
+
+  const roundCards = useMemo<RoundCard[]>(() => {
+    const fixtureByRound = new Map<number, FixtureStripItem>();
+    for (const fixture of fixtures) {
+      if (!fixtureByRound.has(fixture.roundId)) {
+        fixtureByRound.set(fixture.roundId, fixture);
+      }
+    }
+
+    const roundIds = new Set<number>();
+    for (const fixture of fixtures) roundIds.add(fixture.roundId);
+    for (const roundId of normalizedByeRounds) roundIds.add(roundId);
+
+    return [...roundIds]
+      .sort((a, b) => a - b)
+      .map((roundId) => {
+        const fixture = fixtureByRound.get(roundId);
+        if (fixture) {
+          return { kind: "fixture", roundId, fixture };
+        }
+        if (byeRoundSet.has(roundId)) {
+          return { kind: "bye", roundId };
+        }
+        return { kind: "bye", roundId };
+      });
+  }, [fixtures, byeRoundSet, normalizedByeRounds]);
+
   const currentRoundId = useMemo(() => {
-    if (!fixtures || fixtures.length === 0) return null;
+    if (!fixtures || fixtures.length === 0) {
+      return roundCards.length > 0 ? roundCards[roundCards.length - 1].roundId : null;
+    }
     for (let i = 0; i < fixtures.length; i++) {
       const kickoff = kickoffMs(fixtures[i].kickoffAt);
       if (kickoff != null && kickoff > nowMs) {
@@ -33,7 +72,7 @@ export function FixtureStrip({ fixtures, squadId }: FixtureStripProps) {
       }
     }
     return fixtures[fixtures.length - 1].roundId;
-  }, [fixtures, nowMs]);
+  }, [fixtures, nowMs, roundCards]);
 
   useEffect(() => {
     if (currentRef.current) {
@@ -44,7 +83,7 @@ export function FixtureStrip({ fixtures, squadId }: FixtureStripProps) {
     }
   }, [currentRoundId]);
 
-  if (!fixtures || fixtures.length === 0) return null;
+  if (roundCards.length === 0) return null;
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -57,7 +96,12 @@ export function FixtureStrip({ fixtures, squadId }: FixtureStripProps) {
 
   return (
     <div className="space-y-2">
-      <h2 className="text-xl font-bold">Fixtures</h2>
+      <h2 className="text-xl font-bold">Fixtures & Byes</h2>
+      {normalizedByeRounds.length > 0 && (
+        <p className="text-sm text-muted">
+          Bye Planner: {normalizedByeRounds.map((roundId) => `R${roundId}`).join(", ")}
+        </p>
+      )}
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -71,10 +115,38 @@ export function FixtureStrip({ fixtures, squadId }: FixtureStripProps) {
           ref={scrollRef}
           className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none"
         >
-          {fixtures.map((fixture, idx) => {
+          {roundCards.map((card, idx) => {
+            if (card.kind === "bye") {
+              const isCurrent = card.roundId === currentRoundId;
+              const isPast = currentRoundId != null && card.roundId < currentRoundId;
+
+              return (
+                <div
+                  key={`bye-${card.roundId}-${idx}`}
+                  ref={isCurrent ? currentRef : undefined}
+                  className={`flex min-w-[90px] flex-col items-center rounded-lg border p-3 transition-colors ${
+                    isCurrent
+                      ? "border-warning bg-warning/10"
+                      : isPast
+                        ? "border-border/50 bg-surface opacity-60"
+                        : "border-warning/40 bg-warning/5"
+                  }`}
+                >
+                  <div className={`text-xs font-medium ${isCurrent ? "text-warning" : "text-muted"}`}>
+                    R{card.roundId}
+                  </div>
+                  <div className="mt-2 rounded bg-warning/20 px-2 py-0.5 text-xs font-semibold text-warning">
+                    BYE
+                  </div>
+                  <div className="mt-1 text-center text-xs text-muted">No fixture</div>
+                </div>
+              );
+            }
+
+            const fixture = card.fixture;
             const isHome = fixture.homeSquadId === squadId;
             const opponent = isHome ? fixture.awaySquad : fixture.homeSquad;
-            const isCurrent = fixture.roundId === currentRoundId;
+            const isCurrent = card.roundId === currentRoundId;
             const kickoff = kickoffMs(fixture.kickoffAt);
             const isPast = kickoff != null && kickoff < nowMs && !isCurrent;
 

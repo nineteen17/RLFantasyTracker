@@ -29,7 +29,11 @@ export default function TeamPage({ params }: { params: Promise<{ squad_id: strin
   return (
     <div className="space-y-8">
       <TeamHeader team={data.data} />
-      <FixtureStrip fixtures={data.data.fixtureStrip} squadId={squadId} />
+      <FixtureStrip
+        fixtures={data.data.fixtureStrip}
+        byeRounds={data.data.byeRounds}
+        squadId={squadId}
+      />
       <RosterGrid roster={data.data.roster} squadId={squadId} />
     </div>
   );

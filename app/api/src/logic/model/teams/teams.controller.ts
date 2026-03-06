@@ -5,6 +5,8 @@ import {
 	findSquadById,
 	findRosterBySquadId,
 	findFixturesBySquadId,
+	findByePlanner,
+	findByeRoundsBySquad,
 } from "./teams.repository";
 
 export async function listTeams(_req: Request, res: Response) {
@@ -21,10 +23,17 @@ export async function getTeam(req: Request, res: Response) {
 		throw new APIError(404, "Team not found", "TEAM_NOT_FOUND");
 	}
 
-	const [roster, fixtureStrip] = await Promise.all([
+	const [roster, fixtureStrip, byeRounds] = await Promise.all([
 		findRosterBySquadId(squadId),
 		findFixturesBySquadId(squadId, season),
+		findByeRoundsBySquad(squadId, season),
 	]);
 
-	res.json({ data: { ...squad, roster, fixtureStrip } });
+	res.json({ data: { ...squad, roster, fixtureStrip, byeRounds } });
+}
+
+export async function getByePlanner(_req: Request, res: Response) {
+	const season = new Date().getFullYear();
+	const data = await findByePlanner(season);
+	res.json({ data });
 }

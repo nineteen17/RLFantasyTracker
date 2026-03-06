@@ -27,6 +27,11 @@ const PRIMARY_NAV_ITEMS: NavItem[] = [
     label: "Matches",
     isActive: (pathname) => pathname.startsWith("/live"),
   },
+  {
+    href: "/byes",
+    label: "Byes",
+    isActive: (pathname) => pathname.startsWith("/byes"),
+  },
 ];
 
 const WATCHLIST_NAV_ITEM: NavItem = {
@@ -45,13 +50,13 @@ export default function DesktopNav() {
     pathname.startsWith("/players/") && !!returnTo && /^\/teams\/\d+$/.test(returnTo);
 
   return (
-    <nav className="fixed inset-x-0 top-0 z-40 hidden border-b border-border bg-surface/95 backdrop-blur md:block">
+    <nav className="brand-nav-shell fixed inset-x-0 top-0 z-40 hidden border-b md:block">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between lg:h-20">
           <div className="flex items-center gap-8 lg:gap-10">
             <Link
               href="/"
-              className="text-xl font-bold text-accent-light lg:text-2xl"
+              className="brand-nav-title text-xl font-bold text-accent-light lg:text-2xl"
             >
               Footy Break Evens
             </Link>
@@ -68,10 +73,10 @@ export default function DesktopNav() {
                     key={item.href}
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className={`rounded-md px-3 py-1.5 text-sm transition-colors lg:text-base ${
+                    className={`brand-nav-link rounded-md px-3 py-1.5 text-sm transition-colors lg:text-base ${
                       active
-                        ? "bg-accent-light/15 text-accent-light"
-                        : "text-muted hover:text-accent-light"
+                        ? "brand-nav-link-active bg-accent-light/15 text-accent-light"
+                        : "brand-nav-link-inactive text-muted hover:text-accent-light"
                     }`}
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -95,10 +100,10 @@ export default function DesktopNav() {
               aria-current={
                 WATCHLIST_NAV_ITEM.isActive(pathname) ? "page" : undefined
               }
-              className={`rounded-md border px-3 py-1.5 text-sm transition-colors lg:text-base ${
+              className={`brand-nav-watch rounded-md border px-3 py-1.5 text-sm transition-colors lg:text-base ${
                 WATCHLIST_NAV_ITEM.isActive(pathname)
-                  ? "border-accent-light/40 bg-accent-light/15 text-accent-light"
-                  : "border-border text-muted hover:text-accent-light"
+                  ? "brand-nav-watch-active border-accent-light/40 bg-accent-light/15 text-accent-light"
+                  : "brand-nav-watch-inactive border-border text-muted hover:text-accent-light"
               }`}
             >
               {WATCHLIST_NAV_ITEM.label}

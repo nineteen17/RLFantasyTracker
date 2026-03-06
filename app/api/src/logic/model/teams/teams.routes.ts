@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
 import validate from "@src/logic/shared/middleware/validation.middleware";
-import { listTeams, getTeam } from "./teams.controller";
+import { listTeams, getTeam, getByePlanner } from "./teams.controller";
 
 const router = Router();
 
 router.get("/", listTeams);
+
+router.get("/byes", getByePlanner);
 
 router.get(
 	"/:squad_id",

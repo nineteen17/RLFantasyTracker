@@ -1,6 +1,7 @@
 export const teamKeys = {
   all: ["teams"] as const,
   detail: (squadId: number) => ["teams", squadId] as const,
+  byes: ["teams", "byes"] as const,
 };
 
 export const venueKeys = {

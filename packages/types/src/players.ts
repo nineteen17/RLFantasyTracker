@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PlayerMatchRawStatsSchema } from "./live.js";
+import { FixtureStripItemSchema } from "./teams.js";
 
 // --- Request schemas ---
 
@@ -157,7 +158,8 @@ export const PlayerInfoSchema = z.object({
 export const PlayerDetailResponseSchema = z.object({
 	player: PlayerInfoSchema,
 	current: PlayerCurrentSchema.nullable(),
-	fixtureStrip: z.array(z.any()),
+	fixtureStrip: z.array(FixtureStripItemSchema),
+	byeRounds: z.array(z.number().int().positive()),
 });
 
 export const PlayerHistoryMatchSchema = z.object({

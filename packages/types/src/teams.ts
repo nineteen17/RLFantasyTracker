@@ -60,6 +60,24 @@ export const TeamDetailResponseSchema = z.object({
 	data: SquadSchema.extend({
 		roster: z.array(PlayerCardSchema),
 		fixtureStrip: z.array(FixtureStripItemSchema),
+		byeRounds: z.array(z.number()),
+	}),
+});
+
+export const ByePlannerTeamSchema = z.object({
+	squadId: z.number(),
+	name: z.string(),
+	fullName: z.string(),
+	shortName: z.string().nullable(),
+	byeRounds: z.array(z.number()),
+	nextByeRound: z.number().nullable(),
+});
+
+export const ByePlannerResponseSchema = z.object({
+	data: z.object({
+		season: z.number(),
+		rounds: z.array(z.number()),
+		teams: z.array(ByePlannerTeamSchema),
 	}),
 });
 
@@ -70,3 +88,5 @@ export type PlayerCard = z.infer<typeof PlayerCardSchema>;
 export type FixtureStripItem = z.infer<typeof FixtureStripItemSchema>;
 export type TeamsListResponse = z.infer<typeof TeamsListResponseSchema>;
 export type TeamDetailResponse = z.infer<typeof TeamDetailResponseSchema>;
+export type ByePlannerTeam = z.infer<typeof ByePlannerTeamSchema>;
+export type ByePlannerResponse = z.infer<typeof ByePlannerResponseSchema>;

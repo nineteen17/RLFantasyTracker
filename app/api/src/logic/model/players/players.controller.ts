@@ -6,6 +6,7 @@ import {
 	findPlayerById,
 	findPlayerHistoryById,
 	findFixturesForPlayer,
+	findByeRoundsForSquad,
 	getPlayedWithStats,
 } from "./players.repository";
 
@@ -25,12 +26,16 @@ export async function getPlayer(req: Request, res: Response) {
 	}
 
 	const { current, ...playerInfo } = player;
-	const fixtureStrip = await findFixturesForPlayer(player.squadId, season);
+	const [fixtureStrip, byeRounds] = await Promise.all([
+		findFixturesForPlayer(player.squadId, season),
+		findByeRoundsForSquad(player.squadId, season),
+	]);
 
 	res.json({
 		player: playerInfo,
 		current,
 		fixtureStrip,
+		byeRounds,
 	});
 }
 

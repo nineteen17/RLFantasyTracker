@@ -124,3 +124,44 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Branded nav surface: keep dark mode current look, tint light mode purple. */
+.brand-nav-shell {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root[data-theme="light"] .brand-nav-shell {
+  background: #1a1530;
+  border-color: #3a3258;
+}
+
+:root[data-theme="light"] .brand-nav-shell .brand-nav-title,
+:root[data-theme="light"] .brand-nav-shell .brand-nav-link,
+:root[data-theme="light"] .brand-nav-shell .brand-nav-watch {
+  color: #fff;
+}
+
+:root[data-theme="light"] .brand-nav-shell .brand-nav-link-inactive,
+:root[data-theme="light"] .brand-nav-shell .brand-nav-watch-inactive,
+:root[data-theme="light"] .brand-nav-shell .brand-nav-icon-button,
+:root[data-theme="light"] .brand-nav-shell button {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+:root[data-theme="light"] .brand-nav-shell .brand-nav-link-inactive:hover,
+:root[data-theme="light"] .brand-nav-shell .brand-nav-watch-inactive:hover,
+:root[data-theme="light"] .brand-nav-shell .brand-nav-icon-button:hover,
+:root[data-theme="light"] .brand-nav-shell button:hover {
+  color: #fff;
+}
+
+:root[data-theme="light"] .brand-nav-shell .brand-nav-link-active,
+:root[data-theme="light"] .brand-nav-shell .brand-nav-watch-active {
+  background: rgba(167, 139, 250, 0.32);
+  color: #fff;
+}
+
+:root[data-theme="light"] .brand-nav-shell .brand-nav-watch-active {
+  border-color: rgba(167, 139, 250, 0.62);
+}

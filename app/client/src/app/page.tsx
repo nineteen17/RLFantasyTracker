@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div>
-      <section className="relative -mx-4 flex min-h-[60vh] items-end overflow-hidden rounded-none px-5 py-8 sm:mx-0 sm:min-h-[66vh] sm:items-center sm:rounded-2xl sm:px-10 sm:py-14 lg:min-h-[74vh] lg:px-14 lg:py-20">
+    <div className="relative left-1/2 right-1/2 -mt-24 -mb-20 w-screen -translate-x-1/2 md:-mt-28">
+      <section className="relative flex min-h-dvh items-end overflow-hidden px-5 pb-8 pt-24 sm:items-center sm:px-10 sm:pb-14 sm:pt-24 md:pt-28 lg:px-14 lg:pb-20">
         <div
           className="hero-bg-image absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/stadium-250301_akk_1546-1.jpg')" }}
@@ -44,6 +44,12 @@ export default function Home() {
                 className="inline-flex w-full items-center justify-center rounded-lg border border-white/30 bg-black/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-black/35 sm:w-auto"
               >
                 Browse Teams
+              </Link>
+              <Link
+                href="/byes"
+                className="inline-flex w-full items-center justify-center rounded-lg border border-white/30 bg-black/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-black/35 sm:w-auto"
+              >
+                Plan Byes
               </Link>
             </div>
           </div>

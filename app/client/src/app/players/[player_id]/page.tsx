@@ -257,7 +257,7 @@ function PlayerPageContent({
 
   if (!data) return null;
 
-  const { player, current, fixtureStrip } = data;
+  const { player, current, fixtureStrip, byeRounds } = data;
 
   return (
     <div className="space-y-6">
@@ -439,6 +439,7 @@ function PlayerPageContent({
               <>
                 <FixtureStrip
                   fixtures={fixtureStrip}
+                  byeRounds={byeRounds}
                   squadId={player.squadId}
                 />
                 <SplitsTable

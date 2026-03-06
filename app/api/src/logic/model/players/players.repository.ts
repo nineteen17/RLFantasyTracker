@@ -18,6 +18,7 @@ import {
 	playerMatchStatsHistory,
 	squads,
 	fixtures,
+	rounds,
 } from "@database/schema";
 import { calculateFantasyPoints } from "@src/logic/shared/constants/scoring";
 import type { PlayerHistoryResponse, PlayerMatchRawStats } from "@nrl/types";
@@ -619,4 +620,47 @@ export async function findFixturesForPlayer(squadId: number, season: number) {
 		},
 		orderBy: [asc(fixtures.roundId)],
 	});
+}
+
+function parseByeSquadsFromRaw(raw: unknown): number[] {
+	if (!raw || typeof raw !== "object") return [];
+	const maybeByeSquads = (raw as { bye_squads?: unknown }).bye_squads;
+	if (!Array.isArray(maybeByeSquads)) return [];
+	return maybeByeSquads.filter((id): id is number => Number.isInteger(id));
+}
+
+export async function findByeRoundsForSquad(squadId: number, season: number) {
+	const [seasonRounds, squadFixtures] = await Promise.all([
+		db.query.rounds.findMany({
+			where: eq(rounds.season, season),
+			columns: {
+				roundId: true,
+				isByeRound: true,
+				raw: true,
+			},
+			orderBy: [asc(rounds.roundId)],
+		}),
+		db.query.fixtures.findMany({
+			where: and(
+				eq(fixtures.season, season),
+				or(
+					eq(fixtures.homeSquadId, squadId),
+					eq(fixtures.awaySquadId, squadId),
+				),
+			),
+			columns: {
+				roundId: true,
+			},
+		}),
+	]);
+
+	const fixtureRoundIds = new Set<number>(squadFixtures.map((fixture) => fixture.roundId));
+
+	return seasonRounds
+		.filter((round) => {
+			const byeSquads = parseByeSquadsFromRaw(round.raw);
+			if (byeSquads.includes(squadId)) return true;
+			return round.isByeRound && !fixtureRoundIds.has(round.roundId);
+		})
+		.map((round) => round.roundId);
 }
