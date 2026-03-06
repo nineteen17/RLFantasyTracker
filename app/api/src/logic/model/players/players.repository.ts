@@ -577,6 +577,7 @@ export async function getPlayedWithStats(
 					.select({
 						playerId: players.playerId,
 						fullName: players.fullName,
+						status: players.status,
 						squadId: players.squadId,
 					})
 					.from(players)
@@ -588,6 +589,7 @@ export async function getPlayedWithStats(
 	const teammates: Array<{
 		playerId: number;
 		playerName: string;
+		status: string | null;
 		season: PeriodResult | null;
 		lastSeason: PeriodResult | null;
 		total: PeriodResult | null;
@@ -611,6 +613,7 @@ export async function getPlayedWithStats(
 		teammates.push({
 			playerId: mate.playerId,
 			playerName: mate.fullName,
+			status: mate.status,
 			season: seasonResult,
 			lastSeason: lastSeasonResult,
 			total: totalResult,

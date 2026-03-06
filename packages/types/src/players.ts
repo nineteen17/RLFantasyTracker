@@ -200,6 +200,7 @@ export const PlayedWithPeriodSchema = z.object({
 export const PlayedWithTeammateSchema = z.object({
 	playerId: z.number(),
 	playerName: z.string(),
+	status: z.string().nullable(),
 	season: PlayedWithPeriodSchema.nullable(),
 	lastSeason: PlayedWithPeriodSchema.nullable(),
 	total: PlayedWithPeriodSchema.nullable(),

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { PlayedWithResponse } from "@nrl/types";
 import { usePlayedWith } from "@/hooks/api/use-played-with";
+import { StatusBadge } from "@/components/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/lib/utils";
 
@@ -103,12 +104,15 @@ export function PlayedWithCard({ playerId }: PlayedWithCardProps) {
                   return (
                     <tr key={t.playerId} className="hover:bg-surface-alt/30">
                       <td className="py-2">
-                        <Link
-                          href={`/players/${t.playerId}`}
-                          className="text-accent-light hover:underline"
-                        >
-                          {t.playerName}
-                        </Link>
+                        <div className="inline-flex items-center gap-1.5">
+                          <StatusBadge status={t.status} />
+                          <Link
+                            href={`/players/${t.playerId}`}
+                            className="text-accent-light hover:underline"
+                          >
+                            {t.playerName}
+                          </Link>
+                        </div>
                       </td>
                       <td className="py-2 text-right text-muted">{stats.gamesWith}</td>
                       <td className="py-2 text-right">
@@ -142,12 +146,15 @@ export function PlayedWithCard({ playerId }: PlayedWithCardProps) {
                   className="rounded-md border border-border/50 bg-surface-alt/30 p-3"
                 >
                   <div className="flex items-center justify-between">
-                    <Link
-                      href={`/players/${t.playerId}`}
-                      className="text-sm font-medium text-accent-light hover:underline"
-                    >
-                      {t.playerName}
-                    </Link>
+                    <div className="inline-flex items-center gap-1.5">
+                      <StatusBadge status={t.status} />
+                      <Link
+                        href={`/players/${t.playerId}`}
+                        className="text-sm font-medium text-accent-light hover:underline"
+                      >
+                        {t.playerName}
+                      </Link>
+                    </div>
                   </div>
                   <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                     <div>
