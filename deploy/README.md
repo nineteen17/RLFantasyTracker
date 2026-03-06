@@ -29,7 +29,7 @@ docker build -f deploy/docker/web.Dockerfile -t rlfantasy-web:local .
 docker compose -f deploy/compose/compose.prod.yml --env-file .env up -d
 ```
 
-## Required `.env` variables
+## Deployment `.env` variables
 
 | Variable | Purpose |
 |----------|---------|
@@ -41,6 +41,7 @@ docker compose -f deploy/compose/compose.prod.yml --env-file .env up -d
 | `JWT_ACCESS_SECRET` | JWT signing secret |
 | `JWT_REFRESH_SECRET` | JWT refresh secret |
 | `DOCKERHUB_USERNAME` | Docker Hub username (used in image tags) |
+| `NRL_FANTASY_DATA_BASE_URL` | Optional override for upstream NRL data API (default `https://fantasy.nrl.com/data/nrl`) |
 
 ## Notes
 

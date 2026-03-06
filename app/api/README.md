@@ -58,6 +58,7 @@ NODE_ENV=development
 PORT=5000
 
 FRONTEND_URL=http://localhost:5173
+NRL_FANTASY_DATA_BASE_URL=https://fantasy.nrl.com/data/nrl
 
 JWT_ACCESS_SECRET=...
 JWT_REFRESH_SECRET=...

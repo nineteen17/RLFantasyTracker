@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import Link from "next/link";
 import { useTeam } from "@/hooks/api/use-team";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,11 +29,19 @@ export default function TeamPage({ params }: { params: Promise<{ squad_id: strin
 
   return (
     <div className="space-y-8">
+      <Link
+        href="/teams"
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-accent-light md:text-base"
+      >
+        <span>&larr;</span>
+        <span>Back to Teams</span>
+      </Link>
       <TeamHeader team={data.data} />
       <FixtureStrip
         fixtures={data.data.fixtureStrip}
         byeRounds={data.data.byeRounds}
         squadId={squadId}
+        teamName={data.data.shortName ?? data.data.name}
       />
       <RosterGrid roster={data.data.roster} squadId={squadId} />
     </div>

@@ -1,7 +1,11 @@
 import type { UpstreamCoachPlayersResponse } from "./types";
 import logger from "@src/logic/shared/utils/logger";
 
-const BASE_URL = "https://fantasy.nrl.com/data/nrl";
+const DEFAULT_BASE_URL = "https://fantasy.nrl.com/data/nrl";
+const BASE_URL = (process.env.NRL_FANTASY_DATA_BASE_URL ?? DEFAULT_BASE_URL).replace(
+	/\/+$/,
+	"",
+);
 
 const ENDPOINTS = {
 	squads: `${BASE_URL}/squads.json`,

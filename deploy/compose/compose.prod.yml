@@ -52,6 +52,7 @@ services:
       - PORT=5000
       - FRONTEND_URL=https://${APP_DOMAIN:?set APP_DOMAIN}
       - BASE_URL=https://${API_DOMAIN:?set API_DOMAIN}
+      - NRL_FANTASY_DATA_BASE_URL=${NRL_FANTASY_DATA_BASE_URL:-https://fantasy.nrl.com/data/nrl}
       - DATABASE_URL=${DATABASE_URL:?set DATABASE_URL}
       - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
@@ -102,6 +103,7 @@ services:
     command: ["node", "dist/worker/run-scheduler.js"]
     environment:
       - NODE_ENV=production
+      - NRL_FANTASY_DATA_BASE_URL=${NRL_FANTASY_DATA_BASE_URL:-https://fantasy.nrl.com/data/nrl}
       - DATABASE_URL=${DATABASE_URL:?set DATABASE_URL}
       - ENABLE_SCHEDULER=true
       - FOOTY_STATS_COOKIE=${FOOTY_STATS_COOKIE:-}
