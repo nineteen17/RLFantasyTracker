@@ -42,9 +42,12 @@ const WATCHLIST_NAV_ITEM: NavItem = {
 };
 
 export default function MobileMenu() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [openAtLocation, setOpenAtLocation] = useState<string | null>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
+  const currentLocationKey = `${pathname}?${searchKey}`;
+  const isOpen = openAtLocation === currentLocationKey;
   const hasLiveMatch = useLiveCacheIndicator();
   const returnTo = searchParams.get("returnTo");
 
@@ -52,7 +55,7 @@ export default function MobileMenu() {
     pathname.startsWith("/players/") && !!returnTo && /^\/teams\/\d+$/.test(returnTo);
 
   const toggleMenu = () => {
-    setIsOpen(!isOpen);
+    setOpenAtLocation(isOpen ? null : currentLocationKey);
   };
 
   return (
@@ -79,9 +82,13 @@ export default function MobileMenu() {
         <div className="fixed inset-0 z-[60] bg-bg/98 backdrop-blur">
           <div className="h-full w-full">
             <div className="brand-nav-shell flex h-16 items-center justify-between border-b px-4 sm:px-6">
-              <h2 className="brand-nav-title text-xl font-bold text-accent-light">
+              <Link
+                href="/"
+                prefetch={false}
+                className="brand-nav-title text-xl font-bold text-accent-light"
+              >
                 Footy Break Evens
-              </h2>
+              </Link>
               <div className="flex items-center gap-1.5">
                 <ThemeToggle />
                 <button
@@ -94,7 +101,7 @@ export default function MobileMenu() {
               </div>
             </div>
 
-            <nav className="mt-4 flex flex-col gap-1 px-4 sm:px-6" onClick={toggleMenu}>
+            <nav className="mt-4 flex flex-col gap-1 px-4 sm:px-6">
               {PRIMARY_NAV_ITEMS.map((item) => {
                 const active =
                   item.href === "/teams"
