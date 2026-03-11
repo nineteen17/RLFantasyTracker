@@ -68,6 +68,7 @@ export function ScoreHistory({
     const clampedCareerAvg = Math.min(Math.max(allTimeAvg, 0), maxYearlyAvg);
     return (clampedCareerAvg / maxYearlyAvg) * 100;
   })();
+  const careerLinePositionPct = Math.min(Math.max(careerLinePct, 2), 98);
   const chartGridTemplate = `repeat(${yearlyRows.length}, 4.25rem)`;
 
   return (
@@ -104,17 +105,19 @@ export function ScoreHistory({
             ))}
           </div>
           <div className="relative mt-1 h-[120px] lg:h-[140px]">
+            <div className="absolute right-0 top-0 bottom-0 w-20">
+              <span
+                className="pointer-events-none absolute left-0 -translate-y-1/2 rounded bg-surface px-1 text-[10px] font-medium text-white"
+                style={{ bottom: `${careerLinePositionPct}%` }}
+              >
+                Career Avg {formatNumber(allTimeAvg)}
+              </span>
+            </div>
             <div
-              className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-accent-light/70"
-              style={{ bottom: `${careerLinePct}%` }}
+              className="pointer-events-none absolute left-0 right-20 border-t border-dashed border-white/70"
+              style={{ bottom: `${careerLinePositionPct}%` }}
             />
-            <span
-              className="pointer-events-none absolute right-0 -translate-y-1/2 rounded bg-surface px-1 text-[10px] font-medium text-accent-light"
-              style={{ bottom: `${careerLinePct}%` }}
-            >
-              Career Avg {formatNumber(allTimeAvg)}
-            </span>
-            <div className="grid h-full gap-2" style={{ gridTemplateColumns: chartGridTemplate }}>
+            <div className="mr-20 grid h-full gap-2" style={{ gridTemplateColumns: chartGridTemplate }}>
               {yearlyRows.map((row) => (
                 <div
                   key={`yearly-bar-${row.season}`}

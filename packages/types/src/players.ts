@@ -6,6 +6,20 @@ import { FixtureStripItemSchema } from "./teams.js";
 
 export const searchQuerySchema = z.object({
 	q: z.string().optional(),
+	player_ids: z
+		.preprocess((value) => {
+			if (value == null || value === "") return undefined;
+			const values = Array.isArray(value) ? value : [value];
+			return values
+				.flatMap((entry) =>
+					typeof entry === "string" ? entry.split(",") : [entry],
+				)
+				.map((entry) =>
+					typeof entry === "string" ? entry.trim() : entry,
+				)
+				.filter((entry) => entry !== "");
+		}, z.array(z.coerce.number().int().positive()).min(1).max(100))
+		.optional(),
 	squad_id: z.coerce.number().int().positive().optional(),
 	position: z.coerce.number().int().positive().optional(),
 	status: z.string().optional(),

@@ -71,6 +71,39 @@ interface CategoryResult {
   statBreakdown: { key: string; full: string; totalCount: number; avgCount: number; totalPts: number; avgPts: number }[];
 }
 
+const PRESEASON_MATCH_KEYWORDS = [
+  "pre-season",
+  "preseason",
+  "trial",
+  "allstar",
+  "all-star",
+  "world-club",
+];
+
+function normalizeMatchType(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function isPreseasonMatchType(matchType: string): boolean {
+  const normalized = normalizeMatchType(matchType);
+  if (!normalized) return false;
+  return PRESEASON_MATCH_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function roundLabel(match: PlayerHistoryMatch): string {
+  return `${isPreseasonMatchType(match.matchType) ? "PS" : "R"}${match.roundId}`;
+}
+
+function toTimestamp(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function keyForMatch(match: PlayerHistoryMatch): string {
+  return `${match.season}_${match.matchId}`;
+}
+
 function computeBreakdown(
   rounds: { stats: Record<string, number>; points: number }[],
 ): CategoryResult[] {
@@ -211,29 +244,87 @@ function CategoryRow({ result }: { result: CategoryResult }) {
 }
 
 export function ScoreBreakdown({ matches, isLoading }: ScoreBreakdownProps) {
-  const breakdown = useMemo(() => {
+  const [selectedMatchKey, setSelectedMatchKey] = useState<string>("all");
+  const orderedMatches = useMemo(() => {
     if (!matches || matches.length === 0) return [];
-    const rounds = matches.map((m) => ({
+    return [...matches].sort((a, b) => {
+      const aTs = toTimestamp(a.matchDate);
+      const bTs = toTimestamp(b.matchDate);
+
+      if (aTs != null && bTs != null && aTs !== bTs) return bTs - aTs;
+      if (aTs != null && bTs == null) return -1;
+      if (aTs == null && bTs != null) return 1;
+      if (a.season !== b.season) return b.season - a.season;
+      if (a.roundId !== b.roundId) return b.roundId - a.roundId;
+      return b.matchId - a.matchId;
+    });
+  }, [matches]);
+  const matchOptions = useMemo(
+    () =>
+      orderedMatches.map((match) => {
+        return {
+          key: keyForMatch(match),
+          label: `${match.season} · ${roundLabel(match)}`,
+        };
+      }),
+    [orderedMatches],
+  );
+  const resolvedSelectedMatchKey = useMemo(() => {
+    if (selectedMatchKey === "all") return "all";
+    return matchOptions.some((option) => option.key === selectedMatchKey)
+      ? selectedMatchKey
+      : "all";
+  }, [matchOptions, selectedMatchKey]);
+  const scopedMatches = useMemo(() => {
+    if (!matches || matches.length === 0) return [];
+    if (resolvedSelectedMatchKey === "all") return matches;
+    return matches.filter((match) => keyForMatch(match) === resolvedSelectedMatchKey);
+  }, [matches, resolvedSelectedMatchKey]);
+  const breakdown = useMemo(() => {
+    if (scopedMatches.length === 0) return [];
+    const rounds = scopedMatches.map((m) => ({
       stats: m.stats as Record<string, number>,
       points: m.fantasyPoints,
     }));
     return computeBreakdown(rounds);
-  }, [matches]);
+  }, [scopedMatches]);
 
   if (isLoading) return <Skeleton className="h-48" />;
   if (!matches || matches.length === 0) return null;
+  if (scopedMatches.length === 0) return null;
 
-  const gamesPlayed = matches.length;
-  const totalFantasyPoints = matches.reduce((sum, m) => sum + m.fantasyPoints, 0);
+  const gamesPlayed = scopedMatches.length;
+  const points = scopedMatches.map((m) => m.fantasyPoints);
+  const totalFantasyPoints = points.reduce((sum, point) => sum + point, 0);
   const fantasyAvg = totalFantasyPoints / gamesPlayed;
   const positiveCategories = breakdown.filter((b) => b.def.key !== "negative");
   const totalBarPts = positiveCategories.reduce((s, b) => s + Math.max(0, b.avgPoints), 0);
 
   return (
     <div className="rounded-lg border border-border bg-surface p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h2 className="text-xl font-bold">Score Breakdown</h2>
-        <span className="text-sm text-muted md:text-base">{gamesPlayed} game{gamesPlayed !== 1 ? "s" : ""}</span>
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="score-breakdown-game"
+            className="text-sm font-medium text-muted md:text-base"
+          >
+            Round/Game
+          </label>
+          <select
+            id="score-breakdown-game"
+            value={resolvedSelectedMatchKey}
+            onChange={(event) => setSelectedMatchKey(event.target.value)}
+            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent-light md:text-base"
+          >
+            <option value="all">All Games</option>
+            {matchOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Stacked bar */}

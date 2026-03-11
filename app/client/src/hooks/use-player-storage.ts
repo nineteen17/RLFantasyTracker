@@ -14,6 +14,7 @@ import {
   type PlayerStorageInput,
   type StoredPlayer,
 } from "@/lib/player-storage";
+import { useSearchPlayers } from "@/hooks/api/use-search-players";
 
 function useStoredPlayers(
   key: (typeof PLAYER_STORAGE_KEYS)[keyof typeof PLAYER_STORAGE_KEYS],
@@ -74,16 +75,69 @@ export function useRecentPlayers() {
   };
 }
 
-export function useWatchlistPlayers() {
-  const { players, refresh } = useStoredPlayers(
+interface UseWatchlistPlayersOptions {
+  syncFromApi?: boolean;
+}
+
+export function useWatchlistPlayers(options: UseWatchlistPlayersOptions = {}) {
+  const syncFromApi = options.syncFromApi ?? false;
+  const { players: storedPlayers, refresh } = useStoredPlayers(
     PLAYER_STORAGE_KEYS.watchlist,
     getWatchlistPlayers,
   );
+  const watchlistPlayerIds = useMemo(
+    () => storedPlayers.map((player) => player.playerId),
+    [storedPlayers],
+  );
 
   const playerIds = useMemo(
-    () => new Set(players.map((player) => player.playerId)),
-    [players],
+    () => new Set(watchlistPlayerIds),
+    [watchlistPlayerIds],
   );
+  const { data: watchlistData } = useSearchPlayers(
+    {
+      player_ids: watchlistPlayerIds,
+      limit: Math.max(watchlistPlayerIds.length, 1),
+      offset: 0,
+    },
+    { enabled: syncFromApi && watchlistPlayerIds.length > 0 },
+  );
+
+  const players = useMemo<StoredPlayer[]>(() => {
+    if (!syncFromApi) {
+      return storedPlayers;
+    }
+    if (watchlistPlayerIds.length === 0) return [];
+
+    const storedById = new Map(
+      storedPlayers.map((player) => [player.playerId, player] as const),
+    );
+    const liveById = new Map(
+      (watchlistData?.data ?? []).map((player) => [player.playerId, player] as const),
+    );
+
+    return watchlistPlayerIds.flatMap((playerId) => {
+      const live = liveById.get(playerId);
+      if (live) {
+        const stored = storedById.get(playerId);
+        return [
+          {
+            playerId: live.playerId,
+            fullName: live.fullName,
+            squadName: live.squadShortName ?? live.squadName,
+            positions: live.positions ?? [],
+            status: live.status,
+            cost: live.cost,
+            avgPoints: live.avgPoints,
+            updatedAt: stored?.updatedAt ?? 0,
+          },
+        ];
+      }
+
+      const stored = storedById.get(playerId);
+      return stored ? [stored] : [];
+    });
+  }, [storedPlayers, syncFromApi, watchlistData?.data, watchlistPlayerIds]);
 
   const addPlayer = useCallback(
     (player: PlayerStorageInput) => {

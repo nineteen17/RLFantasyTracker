@@ -68,6 +68,9 @@ export async function searchPlayers(query: SearchQuery) {
 	if (query.q) {
 		conditions.push(ilike(players.fullName, `%${query.q}%`));
 	}
+	if (query.player_ids?.length) {
+		conditions.push(inArray(players.playerId, query.player_ids));
+	}
 	if (query.squad_id) {
 		conditions.push(eq(players.squadId, query.squad_id));
 	}

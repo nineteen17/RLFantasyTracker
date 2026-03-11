@@ -3,10 +3,12 @@
 import { useMemo } from "react";
 import type { PlayerHistoryMatch } from "@nrl/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { POSITION_FULL_LABELS } from "@/lib/constants";
 import { formatNumber } from "@/lib/utils";
 
 interface PositionSplitsProps {
   matches: PlayerHistoryMatch[];
+  listedPositions: number[];
   isLoading: boolean;
 }
 
@@ -104,6 +106,12 @@ function getMinutes(match: PlayerHistoryMatch): number {
   return typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
 }
 
+function fallbackListedPosition(positions: number[]): string | null {
+  if (!positions || positions.length === 0) return null;
+  const primary = positions[0];
+  return POSITION_FULL_LABELS[primary] ?? null;
+}
+
 function summarize(matches: TaggedMatch[]): PositionRow[] {
   const byPosition = new Map<string, TaggedMatch[]>();
   for (const match of matches) {
@@ -140,14 +148,20 @@ function summarize(matches: TaggedMatch[]): PositionRow[] {
   });
 }
 
-export function PositionSplits({ matches, isLoading }: PositionSplitsProps) {
+export function PositionSplits({
+  matches,
+  listedPositions,
+  isLoading,
+}: PositionSplitsProps) {
   const prepared = useMemo(() => {
     const tagged: TaggedMatch[] = [];
+    const listedFallback = fallbackListedPosition(listedPositions);
 
     for (const match of matches) {
       const position = canonicalizePosition(match.derivedPosition)
         ?? canonicalizePosition(match.positionMatch)
-        ?? deriveFromJersey(match.jerseyNumber);
+        ?? deriveFromJersey(match.jerseyNumber)
+        ?? listedFallback;
       if (!position) continue;
 
       tagged.push({
@@ -162,7 +176,7 @@ export function PositionSplits({ matches, isLoading }: PositionSplitsProps) {
     return {
       rows,
     };
-  }, [matches]);
+  }, [listedPositions, matches]);
 
   if (isLoading) return <Skeleton className="h-56" />;
   if (!matches || matches.length === 0) return null;

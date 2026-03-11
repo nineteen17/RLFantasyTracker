@@ -111,6 +111,14 @@ export function MinutesBuckets({ matches, isLoading }: MinutesBucketsProps) {
 
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm md:text-base">
+          <colgroup>
+            <col className="w-[36%]" />
+            <col className="w-[12%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
+          </colgroup>
           <thead>
             <tr className="border-b border-border text-xs text-muted md:text-sm">
               <th className="pb-2 text-left font-medium">Minutes</th>
@@ -145,62 +153,57 @@ export function MinutesBuckets({ matches, isLoading }: MinutesBucketsProps) {
       </div>
 
       <div className="mt-4 border-t border-border/60 pt-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted md:text-sm">Custom Range</span>
-            <input
-              type="number"
-              min={0}
-              value={minMinutes}
-              onChange={(e) =>
-                setMinMinutes(Math.max(0, Number(e.target.value) || 0))
-              }
-              className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm tabular-nums"
-            />
-            <span className="text-xs text-muted">to</span>
-            <input
-              type="number"
-              min={0}
-              value={maxMinutes}
-              onChange={(e) =>
-                setMaxMinutes(Math.max(0, Number(e.target.value) || 0))
-              }
-              className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm tabular-nums"
-            />
-            <span className="text-xs text-muted md:text-sm">minutes</span>
-          </div>
-          <div className="flex flex-wrap gap-4 text-xs md:text-sm">
-            <span className="text-muted">
-              GP{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {customRange.games}
-              </span>
-            </span>
-            <span className="text-muted">
-              Avg{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {customRange.avg == null ? "-" : formatNumber(customRange.avg)}
-              </span>
-            </span>
-            <span className="text-muted">
-              PPM{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {customRange.ppm == null ? "-" : customRange.ppm.toFixed(2)}
-              </span>
-            </span>
-            <span className="text-muted">
-              High{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {customRange.high ?? "-"}
-              </span>
-            </span>
-            <span className="text-muted">
-              Low{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {customRange.low ?? "-"}
-              </span>
-            </span>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm md:text-base">
+            <colgroup>
+              <col className="w-[36%]" />
+              <col className="w-[12%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td className="py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted md:text-sm">Custom</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={minMinutes}
+                      onChange={(e) =>
+                        setMinMinutes(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      aria-label="Custom range minimum minutes"
+                      className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm tabular-nums"
+                    />
+                    <span className="text-xs text-muted">to</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={maxMinutes}
+                      onChange={(e) =>
+                        setMaxMinutes(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      aria-label="Custom range maximum minutes"
+                      className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm tabular-nums"
+                    />
+                    <span className="text-xs text-muted md:text-sm">min</span>
+                  </div>
+                </td>
+                <td className="py-2 text-right tabular-nums">{customRange.games}</td>
+                <td className="py-2 text-right tabular-nums">
+                  {customRange.avg == null ? "-" : formatNumber(customRange.avg)}
+                </td>
+                <td className="py-2 text-right tabular-nums">
+                  {customRange.ppm == null ? "-" : customRange.ppm.toFixed(2)}
+                </td>
+                <td className="py-2 text-right tabular-nums">{customRange.high ?? "-"}</td>
+                <td className="py-2 text-right tabular-nums">{customRange.low ?? "-"}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

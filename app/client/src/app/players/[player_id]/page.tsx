@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, use, useCallback, useEffect, useMemo, useRef } from "react";
 import type { PlayerHistoryMatch } from "@nrl/types";
 import { usePlayer, usePlayerHistory } from "@/hooks/api/use-player";
 import { useTeams } from "@/hooks/api/use-teams";
@@ -43,8 +43,10 @@ const SCORING_SUB_TABS = [
 
 type Tab = (typeof TABS)[number]["key"];
 type ScoringSeason = "all" | number;
+type ParsedScoringSeason = ScoringSeason | null;
 type ScoringSubTab = (typeof SCORING_SUB_TABS)[number]["key"];
 const EMPTY_HISTORY_MATCHES: PlayerHistoryMatch[] = [];
+const DEFAULT_SCORING_SEASON = 2026;
 const OFFICIAL_MATCH_TYPE_SET = new Set(["nrl", "finals"]);
 const PRESEASON_MATCH_KEYWORDS = [
   "pre-season",
@@ -55,7 +57,6 @@ const PRESEASON_MATCH_KEYWORDS = [
   "world-club",
 ];
 const OFFICIAL_MATCH_KEYWORDS = ["nrl", "final"];
-const PRESEASON_PREF_STORAGE_KEY = "nrl_scoring_include_preseason_v1";
 const TAB_QUERY_KEY = "tab";
 const SUBTAB_QUERY_KEY = "subtab";
 const SEASON_QUERY_KEY = "season";
@@ -73,10 +74,12 @@ function parseScoringSubTabParam(value: string | null): ScoringSubTab {
   return "breakdown";
 }
 
-function parseScoringSeasonParam(value: string | null): ScoringSeason {
-  if (!value || value === "all") return "all";
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : "all";
+function parseScoringSeasonParam(value: string | null): ParsedScoringSeason {
+  if (value == null || value.trim() === "") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "all") return "all";
+  const parsed = Number(normalized);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 function parseBooleanParam(value: string | null): boolean | null {
@@ -149,14 +152,6 @@ function PlayerPageContent({
   const searchParams = useSearchParams();
   const { player_id } = use(params);
   const playerId = Number(player_id);
-  const [preseasonPref, setPreseasonPref] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return window.localStorage.getItem(PRESEASON_PREF_STORAGE_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
   const { addPlayer: addRecentPlayer } = useRecentPlayers();
   const savedRecentForPlayerRef = useRef<number | null>(null);
   const { data, isLoading, error } = usePlayer(playerId);
@@ -172,7 +167,7 @@ function PlayerPageContent({
   const includePreseasonParam = parseBooleanParam(
     searchParams.get(PRESEASON_QUERY_KEY),
   );
-  const includePreseason = includePreseasonParam ?? preseasonPref;
+  const includePreseason = includePreseasonParam ?? false;
   const { data: historyData, isLoading: historyLoading } = usePlayerHistory(
     playerId,
     includePreseason,
@@ -192,12 +187,20 @@ function PlayerPageContent({
     }
     return [...seasons].sort((a, b) => b - a);
   }, [scopedHistoryMatches]);
+  const defaultScoringSeason = useMemo<ScoringSeason>(() => {
+    if (availableSeasons.includes(DEFAULT_SCORING_SEASON)) {
+      return DEFAULT_SCORING_SEASON;
+    }
+    return availableSeasons[0] ?? "all";
+  }, [availableSeasons]);
   const resolvedScoringSeason =
-    scoringSeason === "all"
-      ? "all"
-      : availableSeasons.includes(scoringSeason)
-        ? scoringSeason
-        : "all";
+    scoringSeason === null
+      ? defaultScoringSeason
+      : scoringSeason === "all"
+        ? "all"
+        : availableSeasons.includes(scoringSeason)
+          ? scoringSeason
+          : defaultScoringSeason;
   const scoringMatches =
     resolvedScoringSeason === "all"
       ? scopedHistoryMatches
@@ -297,17 +300,6 @@ function PlayerPageContent({
     savedRecentForPlayerRef.current = data.player.playerId;
   }, [addRecentPlayer, data, fromSearch]);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        PRESEASON_PREF_STORAGE_KEY,
-        includePreseason ? "1" : "0",
-      );
-    } catch {
-      // no-op if storage is unavailable
-    }
-  }, [includePreseason]);
-
   if (error) return <ErrorState message={error.message} />;
 
   if (isLoading) {
@@ -403,7 +395,6 @@ function PlayerPageContent({
                     <MatchScopePicker
                       includePreseason={includePreseason}
                       onChange={(nextValue) => {
-                        setPreseasonPref(nextValue);
                         updateViewQuery({
                           tab: "scoring",
                           preseason: nextValue,
@@ -479,6 +470,7 @@ function PlayerPageContent({
                 {activeScoringSubTab === "positions" && (
                   <PositionSplits
                     matches={scoringMatches}
+                    listedPositions={player.positions}
                     isLoading={historyLoading}
                   />
                 )}

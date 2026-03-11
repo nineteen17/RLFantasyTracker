@@ -146,7 +146,9 @@ function DesktopWatchlistSkeleton() {
 }
 
 export default function WatchlistPage() {
-  const { players, playerIds, togglePlayer, clear } = useWatchlistPlayers();
+  const { players, playerIds, togglePlayer, clear } = useWatchlistPlayers({
+    syncFromApi: true,
+  });
   const hydrated = useSyncExternalStore(
     () => () => {},
     () => true,
