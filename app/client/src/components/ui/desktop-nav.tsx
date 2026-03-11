@@ -48,6 +48,10 @@ export default function DesktopNav() {
 
   const teamContextOnPlayer =
     pathname.startsWith("/players/") && !!returnTo && /^\/teams\/\d+$/.test(returnTo);
+  const watchlistContextOnPlayer =
+    pathname.startsWith("/players/") && returnTo === "/watchlist";
+  const watchlistActive =
+    WATCHLIST_NAV_ITEM.isActive(pathname) || watchlistContextOnPlayer;
 
   return (
     <nav className="brand-nav-shell fixed inset-x-0 top-0 z-40 hidden border-b md:block">
@@ -66,7 +70,9 @@ export default function DesktopNav() {
                   item.href === "/teams"
                     ? item.isActive(pathname) || teamContextOnPlayer
                     : item.href === "/players/search"
-                      ? item.isActive(pathname) && !teamContextOnPlayer
+                      ? item.isActive(pathname) &&
+                        !teamContextOnPlayer &&
+                        !watchlistContextOnPlayer
                       : item.isActive(pathname);
                 return (
                   <Link
@@ -98,10 +104,10 @@ export default function DesktopNav() {
             <Link
               href={WATCHLIST_NAV_ITEM.href}
               aria-current={
-                WATCHLIST_NAV_ITEM.isActive(pathname) ? "page" : undefined
+                watchlistActive ? "page" : undefined
               }
               className={`brand-nav-watch rounded-md border px-3 py-1.5 text-sm transition-colors lg:text-base ${
-                WATCHLIST_NAV_ITEM.isActive(pathname)
+                watchlistActive
                   ? "brand-nav-watch-active border-accent-light/40 bg-accent-light/15 text-accent-light"
                   : "brand-nav-watch-inactive border-border text-muted hover:text-accent-light"
               }`}
