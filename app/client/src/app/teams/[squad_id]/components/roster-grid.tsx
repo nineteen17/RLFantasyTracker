@@ -6,11 +6,13 @@ import type { PlayerCard } from "@nrl/types";
 import { POSITION_LABELS } from "@/lib/constants";
 import { StatusBadge } from "@/components/status-badge";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
+import { playerPath, teamPath } from "@/lib/entity-routes";
 import { formatPrice, formatNumber, formatPercent } from "@/lib/utils";
 
 interface RosterGridProps {
   roster: PlayerCard[];
   squadId: number;
+  teamName: string;
 }
 
 type SortField = "name" | "price" | "avg" | "base" | "owned" | "ppm";
@@ -70,7 +72,7 @@ function SortIndicator({ active, order }: { active: boolean; order: "asc" | "des
   return <span className="ml-1">{order === "asc" ? "↑" : "↓"}</span>;
 }
 
-export function RosterGrid({ roster, squadId }: RosterGridProps) {
+export function RosterGrid({ roster, squadId, teamName }: RosterGridProps) {
   const [sortField, setSortField] = useState<SortField>("avg");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [query, setQuery] = useState("");
@@ -187,7 +189,7 @@ export function RosterGrid({ roster, squadId }: RosterGridProps) {
                         <div className="flex items-center gap-1.5">
                           <StatusBadge status={player.status} />
                           <Link
-                            href={`/players/${player.playerId}?returnTo=/teams/${squadId}`}
+                            href={`${playerPath(player.playerId, player.fullName)}?returnTo=${encodeURIComponent(teamPath(squadId, teamName))}`}
                             className="truncate font-medium text-accent-light hover:underline"
                           >
                             {player.fullName}

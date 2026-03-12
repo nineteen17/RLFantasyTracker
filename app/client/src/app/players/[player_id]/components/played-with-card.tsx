@@ -6,6 +6,7 @@ import type { PlayedWithResponse } from "@nrl/types";
 import { usePlayedWith } from "@/hooks/api/use-played-with";
 import { StatusBadge } from "@/components/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { playerPath } from "@/lib/entity-routes";
 import { formatNumber } from "@/lib/utils";
 
 type Period = "total" | "season" | "lastSeason";
@@ -107,7 +108,7 @@ export function PlayedWithCard({ playerId }: PlayedWithCardProps) {
                         <div className="inline-flex items-center gap-1.5">
                           <StatusBadge status={t.status} />
                           <Link
-                            href={`/players/${t.playerId}`}
+                            href={playerPath(t.playerId, t.playerName)}
                             className="text-accent-light hover:underline"
                           >
                             {t.playerName}
@@ -149,7 +150,7 @@ export function PlayedWithCard({ playerId }: PlayedWithCardProps) {
                     <div className="inline-flex items-center gap-1.5">
                       <StatusBadge status={t.status} />
                       <Link
-                        href={`/players/${t.playerId}`}
+                        href={playerPath(t.playerId, t.playerName)}
                         className="text-sm font-medium text-accent-light hover:underline"
                       >
                         {t.playerName}

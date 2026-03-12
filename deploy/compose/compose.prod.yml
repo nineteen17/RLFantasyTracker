@@ -134,6 +134,7 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=https://${API_DOMAIN:?set API_DOMAIN}
+      - API_INTERNAL_BASE_URL=http://api:5000
     healthcheck:
       test:
         [

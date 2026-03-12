@@ -1,110 +1,35 @@
-"use client";
+import type { SearchResponse } from "@nrl/types";
+import { apiFetchServer } from "@/lib/api-server";
+import PlayerSearchPageClient from "./player-search-page-client";
+import { buildSearchParams, parseSearchFilters } from "./search-query";
 
-import { Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useSearchPlayers } from "@/hooks/api/use-search-players";
-import type { SearchQuery } from "@nrl/types";
-import { SearchBar } from "./components/search-bar";
-import { SearchFilters } from "./components/search-filters";
-import { PlayerTable } from "./components/player-table";
-import { Pagination } from "@/components/ui/pagination";
-import { ErrorState } from "@/components/ui/error-state";
-import { Skeleton } from "@/components/ui/skeleton";
+type SearchPageSearchParams = Record<string, string | string[] | undefined>;
 
-function SearchPageContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+export const revalidate = 120;
 
-  const filters: Partial<SearchQuery> = {
-    q: searchParams.get("q") ?? undefined,
-    squad_id: searchParams.get("squad_id")
-      ? Number(searchParams.get("squad_id"))
-      : undefined,
-    position: searchParams.get("position")
-      ? Number(searchParams.get("position"))
-      : undefined,
-    status: searchParams.get("status") ?? undefined,
-    sort: (searchParams.get("sort") as SearchQuery["sort"]) ?? "avg_points",
-    order: (searchParams.get("order") as SearchQuery["order"]) ?? "desc",
-    limit: 25,
-    offset: Number(searchParams.get("offset") ?? 0),
-  };
+async function fetchSearchData(
+  searchParams: SearchPageSearchParams,
+): Promise<{ filters: ReturnType<typeof parseSearchFilters>; data?: SearchResponse }> {
+  const filters = parseSearchFilters((key) => searchParams[key]);
+  const params = buildSearchParams(filters);
+  const query = params.toString();
+  const path = query ? `/api/players/search?${query}` : "/api/players/search";
 
-  const { data, isLoading, error } = useSearchPlayers(filters);
-
-  const updateFilters = (updates: Partial<SearchQuery>) => {
-    const params = new URLSearchParams(searchParams);
-    for (const [k, v] of Object.entries(updates)) {
-      if (v !== undefined && v !== "") {
-        params.set(k, String(v));
-      } else {
-        params.delete(k);
-      }
-    }
-    params.set("offset", "0");
-    router.push(`?${params.toString()}`);
-  };
-
-  const handlePageChange = (newOffset: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("offset", String(newOffset));
-    router.push(`?${params.toString()}`);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Player Search</h1>
-        <p className="mt-2 text-muted">Search and filter NRL Fantasy players</p>
-      </div>
-
-      <div>
-        <SearchBar
-          value={filters.q ?? ""}
-          onChange={(q) => updateFilters({ q })}
-        />
-        <div className="mt-3">
-          <SearchFilters
-            squadId={filters.squad_id}
-            position={filters.position}
-            status={filters.status}
-            onFilterChange={updateFilters}
-          />
-        </div>
-      </div>
-
-      {error && <ErrorState message={error.message} />}
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {[...Array(10)].map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
-      ) : data ? (
-        <>
-          <PlayerTable
-            players={data.data}
-            sort={filters.sort ?? "avg_points"}
-            order={filters.order ?? "desc"}
-            onSort={updateFilters}
-          />
-          <Pagination
-            total={data.total}
-            limit={data.limit}
-            offset={data.offset}
-            onPageChange={handlePageChange}
-          />
-        </>
-      ) : null}
-    </div>
-  );
+  try {
+    const data = await apiFetchServer<SearchResponse>(path, { next: { revalidate } });
+    return { filters, data };
+  } catch {
+    return { filters };
+  }
 }
 
-export default function SearchPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SearchPageContent />
-    </Suspense>
-  );
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchPageSearchParams>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const { filters, data } = await fetchSearchData(resolvedSearchParams);
+
+  return <PlayerSearchPageClient initialFilters={filters} initialData={data} />;
 }

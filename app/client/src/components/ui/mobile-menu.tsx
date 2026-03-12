@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useLiveCacheIndicator } from "@/hooks/use-live-cache-indicator";
 import ThemeToggle from "@/components/ui/theme-toggle";
+import { isTeamRoutePath } from "@/lib/entity-routes";
 
 interface NavItem {
   href: string;
@@ -52,7 +53,7 @@ export default function MobileMenu() {
   const returnTo = searchParams.get("returnTo");
 
   const teamContextOnPlayer =
-    pathname.startsWith("/players/") && !!returnTo && /^\/teams\/\d+$/.test(returnTo);
+    pathname.startsWith("/players/") && !!returnTo && isTeamRoutePath(returnTo);
   const watchlistContextOnPlayer =
     pathname.startsWith("/players/") && returnTo === "/watchlist";
   const watchlistActive =

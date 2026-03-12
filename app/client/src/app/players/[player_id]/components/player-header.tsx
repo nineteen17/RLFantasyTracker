@@ -7,6 +7,7 @@ import { PositionBadge } from "@/components/position-badge";
 import { StatusBadge } from "@/components/status-badge";
 import { useWatchlistPlayers } from "@/hooks/use-player-storage";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
+import { teamPath } from "@/lib/entity-routes";
 import { formatPrice } from "@/lib/utils";
 
 interface PlayerHeaderProps {
@@ -26,7 +27,7 @@ export function PlayerHeader({ player, avgPoints }: PlayerHeaderProps) {
           <div className="hidden md:block">
             <h1 className="text-3xl font-bold">{player.fullName}</h1>
             <Link
-              href={`/teams/${player.squadId}`}
+              href={teamPath(player.squadId, player.squad.shortName ?? player.squad.name)}
               className="mt-1 text-accent-light hover:underline"
             >
               {player.squad.name}
@@ -75,7 +76,7 @@ export function PlayerHeader({ player, avgPoints }: PlayerHeaderProps) {
         <h1 className="break-words text-2xl font-bold leading-tight">{player.fullName}</h1>
         <div className="flex items-start justify-between gap-3">
           <Link
-            href={`/teams/${player.squadId}`}
+            href={teamPath(player.squadId, player.squad.shortName ?? player.squad.name)}
             className="text-accent-light hover:underline"
           >
             {player.squad.name}

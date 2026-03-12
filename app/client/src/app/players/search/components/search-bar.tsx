@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { POSITION_LABELS } from "@/lib/constants";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRecentPlayers } from "@/hooks/use-player-storage";
+import { playerPath } from "@/lib/entity-routes";
 
 interface SearchBarProps {
   value: string;
@@ -75,7 +76,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   setFocused(false);
-                  router.push(`/players/${player.playerId}?from=search`);
+                  router.push(`${playerPath(player.playerId, player.fullName)}?from=search`);
                 }}
                 className="w-full cursor-pointer rounded-md px-4 py-2 text-left transition-colors hover:bg-surface-alt"
               >

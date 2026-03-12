@@ -20,11 +20,12 @@ function kickoffMs(value: string | null): number | null {
 function formatKickoff(value: string | null): string {
   const ms = kickoffMs(value);
   if (ms == null) return "TBD";
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("en-NZ", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "Pacific/Auckland",
   }).format(new Date(ms));
 }
 
@@ -50,12 +51,17 @@ export function FixtureStrip({
 }: FixtureStripProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentRef = useRef<HTMLDivElement>(null);
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState<number | null>(null);
   const [isDrawOpen, setIsDrawOpen] = useState(false);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
-    return () => window.clearInterval(id);
+    const tick = () => setNowMs(Date.now());
+    const startId = window.setTimeout(tick, 0);
+    const intervalId = window.setInterval(tick, 60_000);
+    return () => {
+      window.clearTimeout(startId);
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   useEffect(() => {
@@ -110,6 +116,8 @@ export function FixtureStrip({
   }, [fixtures, byeRoundSet, normalizedByeRounds]);
 
   const currentRoundId = useMemo(() => {
+    if (nowMs == null) return null;
+
     if (!fixtures || fixtures.length === 0) {
       return roundCards.length > 0 ? roundCards[roundCards.length - 1].roundId : null;
     }
@@ -234,7 +242,7 @@ export function FixtureStrip({
             const opponent = isHome ? fixture.awaySquad : fixture.homeSquad;
             const isCurrent = card.roundId === currentRoundId;
             const kickoff = kickoffMs(fixture.kickoffAt);
-            const isPast = kickoff != null && kickoff < nowMs && !isCurrent;
+            const isPast = nowMs != null && kickoff != null && kickoff < nowMs && !isCurrent;
 
             return (
               <div

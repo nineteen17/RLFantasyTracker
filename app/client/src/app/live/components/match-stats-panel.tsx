@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { LivePlayerStat } from "@nrl/types";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
 import { ALL_STATS, statFantasyPoints } from "@/lib/stat-labels";
+import { playerPath } from "@/lib/entity-routes";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MatchStatsPanelProps {
@@ -194,7 +195,7 @@ function TeamStatsTable({
                         className="h-7 w-7 md:h-8 md:w-8"
                       />
                       <Link
-                        href={`/players/${player.playerId}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
+                        href={`${playerPath(player.playerId, player.fullName)}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
                         className="max-w-[82px] truncate text-xs text-accent-light hover:underline md:max-w-none md:text-sm"
                       >
                         <span className="md:hidden">

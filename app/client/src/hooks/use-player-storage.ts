@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useSyncExternalStore } from "react";
 import {
   PLAYER_STORAGE_EVENT,
   PLAYER_STORAGE_KEYS,
@@ -16,26 +16,53 @@ import {
 } from "@/lib/player-storage";
 import { useSearchPlayers } from "@/hooks/api/use-search-players";
 
+const EMPTY_PLAYERS: StoredPlayer[] = [];
+
+function areSamePlayers(prev: StoredPlayer[], next: StoredPlayer[]): boolean {
+  if (prev === next) return true;
+  if (prev.length !== next.length) return false;
+
+  for (let i = 0; i < prev.length; i += 1) {
+    const a = prev[i];
+    const b = next[i];
+    if (
+      a.playerId !== b.playerId ||
+      a.fullName !== b.fullName ||
+      a.squadName !== b.squadName ||
+      a.status !== b.status ||
+      a.cost !== b.cost ||
+      a.avgPoints !== b.avgPoints ||
+      a.updatedAt !== b.updatedAt
+    ) {
+      return false;
+    }
+
+    if (a.positions.length !== b.positions.length) return false;
+    for (let j = 0; j < a.positions.length; j += 1) {
+      if (a.positions[j] !== b.positions[j]) return false;
+    }
+  }
+
+  return true;
+}
+
 function useStoredPlayers(
   key: (typeof PLAYER_STORAGE_KEYS)[keyof typeof PLAYER_STORAGE_KEYS],
   getter: () => StoredPlayer[],
 ) {
-  const [players, setPlayers] = useState<StoredPlayer[]>(() => getter());
+  const snapshotRef = useRef<StoredPlayer[]>(EMPTY_PLAYERS);
 
-  const refresh = useCallback(() => {
-    setPlayers(getter());
-  }, [getter]);
-
-  useEffect(() => {
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
     const handleStorage = (event: StorageEvent) => {
       if (event.key !== key) return;
-      refresh();
+      onStoreChange();
     };
 
     const handleCustom = (event: Event) => {
       const custom = event as CustomEvent<{ key?: string }>;
       if (custom.detail?.key !== key) return;
-      refresh();
+      onStoreChange();
     };
 
     window.addEventListener("storage", handleStorage);
@@ -44,7 +71,26 @@ function useStoredPlayers(
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener(PLAYER_STORAGE_EVENT, handleCustom);
     };
-  }, [key, refresh]);
+    },
+    [key],
+  );
+
+  const getSnapshot = useCallback(() => {
+    const next = getter();
+    const prev = snapshotRef.current;
+    if (areSamePlayers(prev, next)) return prev;
+    snapshotRef.current = next;
+    return next;
+  }, [getter]);
+
+  const players = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_PLAYERS);
+
+  const refresh = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent(PLAYER_STORAGE_EVENT, { detail: { key } }),
+    );
+  }, [key]);
 
   return { players, refresh };
 }

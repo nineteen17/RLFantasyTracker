@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title: "NRL Fantasy Tools and Break Evens",
+  description:
+    "Use player search, break-even analysis, live scoring, byes, and team tools for NRL Fantasy decisions.",
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default function Home() {
   return (

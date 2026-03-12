@@ -1,3 +1,5 @@
+import { toApiUrl } from "@/lib/api-url";
+
 function getRuntimeApiBase(): string {
   if (typeof window === "undefined") {
     return "http://localhost:3001";
@@ -58,7 +60,7 @@ export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(toApiUrl(API_BASE, path), {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });

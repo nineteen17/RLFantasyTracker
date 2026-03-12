@@ -1,25 +1,42 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import MobileMenu from "@/components/ui/mobile-menu";
 import DesktopNav from "@/components/ui/desktop-nav";
 import GoogleAnalytics from "@/components/analytics/google-analytics";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+function resolveSiteUrl(): URL {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL ?? "https://footybreakevens.com";
+  try {
+    return new URL(raw);
+  } catch {
+    return new URL("https://footybreakevens.com");
+  }
+}
 
 export const metadata: Metadata = {
-  title: "Footy Break Evens",
-  description: "Player stats, value metrics, and team analysis",
+  metadataBase: resolveSiteUrl(),
+  title: {
+    default: "Footy Break Evens",
+    template: "%s | Footy Break Evens",
+  },
+  description: "Player stats, value metrics, break evens, and team analysis.",
+  openGraph: {
+    type: "website",
+    title: "Footy Break Evens",
+    description: "Player stats, value metrics, break evens, and team analysis.",
+    siteName: "Footy Break Evens",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Footy Break Evens",
+    description: "Player stats, value metrics, break evens, and team analysis.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 const themeInitScript = `
@@ -49,9 +66,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-bg`}
-      >
+      <body className="antialiased bg-bg">
         <QueryProvider>
           <Suspense>
             <GoogleAnalytics />

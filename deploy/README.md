@@ -50,3 +50,4 @@ docker compose -f deploy/compose/compose.prod.yml --env-file .env up -d
 - Images are pinned to `:latest` tag; Watchtower tracks digest changes
 - `NEXT_PUBLIC_*` values for Next.js web are baked at image build time via GitHub Actions build args
 - GA4 Measurement ID is set in `.github/workflows/docker-release.yml` and baked into the web image at build time
+- `API_INTERNAL_BASE_URL` is runtime-only and used by Next.js server routes to call API over the Docker network (`http://api:5000`)

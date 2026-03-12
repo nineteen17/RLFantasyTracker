@@ -5,6 +5,7 @@ import { playerKeys } from "./keys";
 
 interface UseSearchPlayersOptions {
   enabled?: boolean;
+  initialData?: SearchResponse;
 }
 
 export function useSearchPlayers(
@@ -22,11 +23,14 @@ export function useSearchPlayers(
     params.set(k, String(v));
   }
 
+  const query = params.toString();
+  const path = query ? `/api/players/search?${query}` : "/api/players/search";
+
   return useQuery({
     queryKey: playerKeys.search(filters),
-    queryFn: () =>
-      apiFetch<SearchResponse>(`/api/players/search?${params.toString()}`),
+    queryFn: () => apiFetch<SearchResponse>(path),
     placeholderData: keepPreviousData,
     enabled: options.enabled ?? true,
+    initialData: options.initialData,
   });
 }

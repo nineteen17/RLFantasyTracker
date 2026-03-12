@@ -8,6 +8,7 @@ import { useWatchlistPlayers } from "@/hooks/use-player-storage";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
+import { playerPath } from "@/lib/entity-routes";
 import { formatNumber, formatPrice } from "@/lib/utils";
 
 function positionLabel(positions: number[]): string {
@@ -209,7 +210,7 @@ export default function WatchlistPage() {
                     />
                     <div className="min-w-0">
                       <Link
-                        href={`/players/${player.playerId}?returnTo=%2Fwatchlist`}
+                        href={`${playerPath(player.playerId, player.fullName)}?returnTo=%2Fwatchlist`}
                         className="block line-clamp-2 text-sm font-medium leading-tight text-accent-light hover:underline"
                       >
                         {player.fullName}
@@ -310,7 +311,7 @@ export default function WatchlistPage() {
                       />
                       <div className="min-w-0 text-left">
                         <Link
-                          href={`/players/${player.playerId}?returnTo=%2Fwatchlist`}
+                          href={`${playerPath(player.playerId, player.fullName)}?returnTo=%2Fwatchlist`}
                           className="block line-clamp-2 font-medium leading-tight text-accent-light hover:underline"
                         >
                           {player.fullName}

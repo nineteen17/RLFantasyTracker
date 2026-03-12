@@ -8,9 +8,18 @@ interface Venue {
   shortName: string | null;
 }
 
-export function useVenues() {
+export interface VenuesResponse {
+  data: Venue[];
+}
+
+interface UseVenuesOptions {
+  initialData?: VenuesResponse;
+}
+
+export function useVenues(options: UseVenuesOptions = {}) {
   return useQuery({
     queryKey: venueKeys.all,
-    queryFn: () => apiFetch<{ data: Venue[] }>("/api/venues"),
+    queryFn: () => apiFetch<VenuesResponse>("/api/venues"),
+    initialData: options.initialData,
   });
 }

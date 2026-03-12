@@ -1,26 +1,29 @@
-"use client";
-
-import { useTeamByes } from "@/hooks/api/use-teams";
+import type { ByePlannerResponse } from "@nrl/types";
 import { ErrorState } from "@/components/ui/error-state";
-import { Skeleton } from "@/components/ui/skeleton";
+import { apiFetchServer } from "@/lib/api-server";
 
-export default function ByePlannerPage() {
-  const { data, isLoading, error } = useTeamByes();
+export const revalidate = 3600;
+
+async function fetchByePlanner(): Promise<ByePlannerResponse | null> {
+  try {
+    return await apiFetchServer<ByePlannerResponse>("/api/teams/byes", {
+      next: { revalidate },
+    });
+  } catch {
+    return null;
+  }
+}
+
+export default async function ByePlannerPage() {
+  const data = await fetchByePlanner();
+
+  if (!data) {
+    return <ErrorState message="Unable to load bye data right now." />;
+  }
 
   const rounds = data?.data.rounds ?? [];
   const teams = data?.data.teams ?? [];
   const season = data?.data.season ?? new Date().getFullYear();
-
-  if (error) return <ErrorState message={error.message} />;
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Bye Planner</h1>
-        <Skeleton className="h-96" />
-      </div>
-    );
-  }
 
   if (rounds.length === 0 || teams.length === 0) {
     return (

@@ -3,10 +3,15 @@ import type { TeamsListResponse, ByePlannerResponse } from "@nrl/types";
 import { apiFetch } from "@/lib/api-client";
 import { teamKeys } from "./keys";
 
-export function useTeams() {
+interface UseTeamsOptions {
+  initialData?: TeamsListResponse;
+}
+
+export function useTeams(options: UseTeamsOptions = {}) {
   return useQuery({
     queryKey: teamKeys.all,
     queryFn: () => apiFetch<TeamsListResponse>("/api/teams"),
+    initialData: options.initialData,
   });
 }
 

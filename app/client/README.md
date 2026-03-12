@@ -132,6 +132,7 @@ The types package is transpiled by Next.js via `transpilePackages` config.
 ## Environment Variables
 
 - `NEXT_PUBLIC_API_URL` - API base URL (default: http://localhost:3001)
+- `API_INTERNAL_BASE_URL` - Server-side API base for Next.js server routes (default: `http://localhost:3001` in local)
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID` - Google Analytics 4 Measurement ID (example: `G-ABCDEFG123`)
 
 ## Scripts

@@ -7,6 +7,7 @@ import { POSITION_LABELS } from "@/lib/constants";
 import { StatusBadge } from "@/components/status-badge";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
 import { useWatchlistPlayers } from "@/hooks/use-player-storage";
+import { playerPath } from "@/lib/entity-routes";
 import {
   formatPrice,
   formatNumber,
@@ -156,7 +157,7 @@ export function PlayerTable({
                         />
                       </button>
                       <Link
-                        href={`/players/${player.playerId}?from=search`}
+                        href={`${playerPath(player.playerId, player.fullName)}?from=search`}
                         className="line-clamp-2 font-medium leading-tight text-accent-light hover:underline"
                       >
                         {player.fullName}

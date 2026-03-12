@@ -146,12 +146,19 @@ function LivePageContent() {
 }
 
 function Countdown({ targetDate }: { targetDate: string }) {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const startId = window.setTimeout(tick, 0);
+    const intervalId = window.setInterval(tick, 60_000);
+    return () => {
+      window.clearTimeout(startId);
+      window.clearInterval(intervalId);
+    };
   }, []);
+
+  if (now == null) return null;
 
   const diff = new Date(targetDate).getTime() - now;
   if (diff <= 0) return null;
