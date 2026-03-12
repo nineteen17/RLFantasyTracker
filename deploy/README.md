@@ -48,3 +48,5 @@ docker compose -f deploy/compose/compose.prod.yml --env-file .env up -d
 - Watchtower only monitors containers with `com.centurylinklabs.watchtower.enable=true` label
 - `api` has `ENABLE_SCHEDULER=false`; `worker` runs the scheduler process
 - Images are pinned to `:latest` tag; Watchtower tracks digest changes
+- `NEXT_PUBLIC_*` values for Next.js web are baked at image build time via GitHub Actions build args
+- GA4 Measurement ID is set in `.github/workflows/docker-release.yml` and baked into the web image at build time

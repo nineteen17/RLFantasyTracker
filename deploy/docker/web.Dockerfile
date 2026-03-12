@@ -15,7 +15,9 @@ RUN --mount=type=cache,target=/root/.npm sh -lc '\
 
 FROM base AS build
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GA_MEASUREMENT_ID
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
 COPY --from=deps /workspace/app/client/node_modules ./app/client/node_modules
 COPY --from=deps /workspace/packages/types ./packages/types
 COPY app/client ./app/client

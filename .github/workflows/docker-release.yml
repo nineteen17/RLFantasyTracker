@@ -19,6 +19,8 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       API_DOMAIN: ${{ vars.API_DOMAIN || 'api.footybreakevens.com' }}
+      # Public GA4 measurement ID (not a secret). This is baked into the Next.js web build.
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: G-8BYXT95NP9
     steps:
       - uses: actions/checkout@v4
 
@@ -62,6 +64,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=https://${{ env.API_DOMAIN }}
+            NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ env.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
           tags: |
             docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-web:sha-${{ github.sha }}
             docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-web:latest

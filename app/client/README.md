@@ -24,6 +24,7 @@ npm install
 ```bash
 cp .env.local.example .env.local
 # Edit .env.local and set NEXT_PUBLIC_API_URL (defaults to http://localhost:3001)
+# Optionally set NEXT_PUBLIC_GA_MEASUREMENT_ID for analytics
 ```
 
 3. Run the development server:
@@ -131,6 +132,7 @@ The types package is transpiled by Next.js via `transpilePackages` config.
 ## Environment Variables
 
 - `NEXT_PUBLIC_API_URL` - API base URL (default: http://localhost:3001)
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` - Google Analytics 4 Measurement ID (example: `G-ABCDEFG123`)
 
 ## Scripts
 
@@ -145,3 +147,24 @@ The types package is transpiled by Next.js via `transpilePackages` config.
 - All pages are client components (`"use client"`) due to TanStack Query
 - Route-specific components live in `components/` folders next to their pages
 - Shared components only promoted to `src/components/` when used by 2+ routes
+
+## Analytics (GA4)
+
+GA4 is optional and only runs when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set.
+
+Implementation details:
+
+- `gtag.js` is loaded after interactive hydration
+- Initial page view is captured by default GA4 config
+- Additional page views are sent on App Router route changes
+
+To collect monetization modeling inputs, in GA4 set date range to `Last 30 days` and extract:
+
+- `monthly_users`: Reports -> Acquisition -> Traffic acquisition -> `Total users`
+- `monthly_sessions`: Reports -> Acquisition -> Traffic acquisition -> `Sessions`
+- `pageviews_per_session`: Reports -> Engagement -> Overview -> `Views per session`
+- `avg_engagement_time_seconds`: Reports -> Engagement -> Overview -> `Average engagement time per session`
+- `au_traffic_percent`: Reports -> Demographics -> Demographic details -> Country (`AU sessions / total sessions`)
+- `nz_traffic_percent`: Reports -> Demographics -> Demographic details -> Country (`NZ sessions / total sessions`)
+- `mobile_percent`: Reports -> Tech -> Tech details -> Device category (`Mobile sessions / total sessions`)
+- `desktop_percent`: Reports -> Tech -> Tech details -> Device category (`Desktop sessions / total sessions`)

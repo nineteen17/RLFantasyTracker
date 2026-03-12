@@ -5,6 +5,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import MobileMenu from "@/components/ui/mobile-menu";
 import DesktopNav from "@/components/ui/desktop-nav";
+import GoogleAnalytics from "@/components/analytics/google-analytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,6 +54,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <Suspense>
+            <GoogleAnalytics />
             <MobileMenu />
             <DesktopNav />
           </Suspense>
