@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { SearchQuery, SearchResponse } from "@nrl/types";
 import { useSearchPlayers } from "@/hooks/api/use-search-players";
+import { trackEvent } from "@/lib/analytics";
 import { Pagination } from "@/components/ui/pagination";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,6 +51,12 @@ export default function PlayerSearchPageClient({
       ...updates,
       offset: 0,
     };
+
+    trackEvent("search_used", {
+      search_query: nextFilters.q ?? "",
+      squad_filter: nextFilters.squad_id ?? "",
+      position_filter: nextFilters.position ?? "",
+    });
 
     const query = buildSearchParams(nextFilters).toString();
     router.push(query ? `${pathname}?${query}` : pathname);

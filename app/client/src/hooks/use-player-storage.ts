@@ -15,6 +15,7 @@ import {
   type StoredPlayer,
 } from "@/lib/player-storage";
 import { useSearchPlayers } from "@/hooks/api/use-search-players";
+import { trackEvent } from "@/lib/analytics";
 
 const EMPTY_PLAYERS: StoredPlayer[] = [];
 
@@ -188,6 +189,10 @@ export function useWatchlistPlayers(options: UseWatchlistPlayersOptions = {}) {
   const addPlayer = useCallback(
     (player: PlayerStorageInput) => {
       addWatchlistPlayer(player);
+      trackEvent("watchlist_add", {
+        player_id: player.playerId,
+        player_name: player.fullName,
+      });
       refresh();
     },
     [refresh],
@@ -207,6 +212,10 @@ export function useWatchlistPlayers(options: UseWatchlistPlayersOptions = {}) {
         removeWatchlistPlayer(player.playerId);
       } else {
         addWatchlistPlayer(player);
+        trackEvent("watchlist_add", {
+          player_id: player.playerId,
+          player_name: player.fullName,
+        });
       }
       refresh();
     },

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { TrackedCtaLink } from "@/components/analytics/tracked-cta-link";
 
 export const metadata: Metadata = {
   title: "NRL Fantasy Tools and Break Evens",
@@ -43,12 +44,13 @@ export default function Home() {
             </p>
 
             <div className="mt-7 flex flex-col gap-2.5 sm:mt-9 sm:flex-row sm:flex-wrap sm:gap-3 lg:mt-11 lg:gap-4">
-              <Link
+              <TrackedCtaLink
                 href="/players/search"
+                eventName="cta_start_player_search"
                 className="inline-flex w-full items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-light sm:w-auto"
               >
                 Start Player Search
-              </Link>
+              </TrackedCtaLink>
               <Link
                 href="/live"
                 className="inline-flex w-full items-center justify-center rounded-lg border border-white/30 bg-black/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-black/35 sm:w-auto"

@@ -6,7 +6,7 @@ import Script from "next/script";
 
 declare global {
   interface Window {
-    dataLayer: unknown[];
+    dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
   }
 }

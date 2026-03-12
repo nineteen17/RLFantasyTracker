@@ -30,6 +30,7 @@ import { MatchScopePicker } from "./components/match-scope-picker";
 import { PlayedWithCard } from "./components/played-with-card";
 import { isTeamRoutePath } from "@/lib/entity-routes";
 import { formatNumber } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
 
 const TABS = [
   { key: "overview", label: "Overview" },
@@ -322,6 +323,17 @@ export default function PlayerPageClient({
     });
     savedRecentForPlayerRef.current = data.player.playerId;
   }, [addRecentPlayer, data, fromSearch]);
+
+  const trackedProfileViewRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!data) return;
+    if (trackedProfileViewRef.current === data.player.playerId) return;
+    trackEvent("player_profile_view", {
+      player_id: data.player.playerId,
+      player_name: data.player.fullName,
+    });
+    trackedProfileViewRef.current = data.player.playerId;
+  }, [data]);
 
   if (error) return <ErrorState message={error.message} />;
 

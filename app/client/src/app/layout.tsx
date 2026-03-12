@@ -5,6 +5,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import MobileMenu from "@/components/ui/mobile-menu";
 import DesktopNav from "@/components/ui/desktop-nav";
 import GoogleAnalytics from "@/components/analytics/google-analytics";
+import { EngagedSessionTracker } from "@/components/analytics/engaged-session-tracker";
 
 function resolveSiteUrl(): URL {
   const raw = process.env.NEXT_PUBLIC_SITE_URL ?? "https://footybreakevens.com";
@@ -70,6 +71,7 @@ export default function RootLayout({
         <QueryProvider>
           <Suspense>
             <GoogleAnalytics />
+            <EngagedSessionTracker />
             <MobileMenu />
             <DesktopNav />
           </Suspense>
