@@ -32,8 +32,22 @@ export function startScheduler(): void {
 
 	// Daily full sync at 4:00 AM AEST = 18:00 UTC (previous day)
 	cron.schedule("0 18 * * *", async () => {
-		logger.info("[Scheduler] Daily cron triggered — running full sync");
+		logger.info(
+			"[Scheduler] Daily cron triggered — running full sync + nightly history reconcile",
+		);
 		await safeSyncRun("daily-cron", () => runFullSync());
+		if (ENABLE_HISTORY_SYNC) {
+			await safeHistorySyncRun("nightly-reconcile", async () => {
+				await runOfficialHistoryIncrementalSync({
+					reason: "nightly-reconcile",
+					lookbackRounds:
+						Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
+						HISTORY_SYNC_LOOKBACK_ROUNDS > 0
+							? HISTORY_SYNC_LOOKBACK_ROUNDS
+							: 3,
+				});
+			});
+		}
 	});
 
 	logger.info("[Scheduler] Daily cron scheduled (4:00 AM AEST)");
