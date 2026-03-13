@@ -72,7 +72,7 @@ function LivePageContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold shrink-0">2026 Draw</h1>
+          <h1 className="text-3xl font-bold shrink-0">2026 Draw</h1>
           {hasLiveMatch && (
             <span className="flex items-center gap-1.5 text-sm text-foreground">
               <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />

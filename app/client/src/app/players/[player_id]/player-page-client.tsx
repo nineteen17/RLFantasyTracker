@@ -19,6 +19,7 @@ import { PlayerHeader } from "./components/player-header";
 import { StatsOverview } from "./components/stats-overview";
 import { OwnershipCard } from "./components/ownership-card";
 import { ProjectionsCard } from "./components/projections-card";
+import { PriceModelCalculator } from "./components/price-model-calculator";
 import { FixtureStrip } from "./components/fixture-strip";
 import { ScoreHistory } from "./components/score-history";
 import { SplitsTable } from "./components/splits-table";
@@ -48,10 +49,17 @@ const SCORING_SUB_TABS = [
   { key: "matchStats", label: "Match Stats" },
 ] as const;
 
+const PROJECTIONS_SUB_TABS = [
+  { key: "rounds", label: "Round Predictor" },
+  { key: "model", label: "Price Calculator" },
+] as const;
+
 type Tab = (typeof TABS)[number]["key"];
 type ScoringSeason = "all" | number;
 type ParsedScoringSeason = ScoringSeason | null;
 type ScoringSubTab = (typeof SCORING_SUB_TABS)[number]["key"];
+type ProjectionsSubTab = (typeof PROJECTIONS_SUB_TABS)[number]["key"];
+type SubTab = ScoringSubTab | ProjectionsSubTab;
 const EMPTY_HISTORY_MATCHES: PlayerHistoryMatch[] = [];
 const DEFAULT_SCORING_SEASON = 2026;
 const OFFICIAL_MATCH_TYPE_SET = new Set(["nrl", "finals"]);
@@ -70,6 +78,9 @@ const SEASON_QUERY_KEY = "season";
 const PRESEASON_QUERY_KEY = "preseason";
 const TAB_KEYS = new Set<string>(TABS.map((tab) => tab.key));
 const SCORING_SUBTAB_KEYS = new Set<string>(SCORING_SUB_TABS.map((tab) => tab.key));
+const PROJECTIONS_SUBTAB_KEYS = new Set<string>(
+  PROJECTIONS_SUB_TABS.map((tab) => tab.key),
+);
 
 function parseTabParam(value: string | null): Tab {
   if (value && TAB_KEYS.has(value)) return value as Tab;
@@ -79,6 +90,11 @@ function parseTabParam(value: string | null): Tab {
 function parseScoringSubTabParam(value: string | null): ScoringSubTab {
   if (value && SCORING_SUBTAB_KEYS.has(value)) return value as ScoringSubTab;
   return "breakdown";
+}
+
+function parseProjectionsSubTabParam(value: string | null): ProjectionsSubTab {
+  if (value && PROJECTIONS_SUBTAB_KEYS.has(value)) return value as ProjectionsSubTab;
+  return "rounds";
 }
 
 function parseScoringSeasonParam(value: string | null): ParsedScoringSeason {
@@ -180,6 +196,9 @@ export default function PlayerPageClient({
   const activeScoringSubTab = parseScoringSubTabParam(
     searchParams.get(SUBTAB_QUERY_KEY),
   );
+  const activeProjectionsSubTab = parseProjectionsSubTabParam(
+    searchParams.get(SUBTAB_QUERY_KEY),
+  );
   const scoringSeason = parseScoringSeasonParam(
     searchParams.get(SEASON_QUERY_KEY),
   );
@@ -264,12 +283,12 @@ export default function PlayerPageClient({
       subtab,
       season,
       preseason,
-    }: {
-      tab?: Tab;
-      subtab?: ScoringSubTab;
-      season?: ScoringSeason;
-      preseason?: boolean;
-    }) => {
+      }: {
+        tab?: Tab;
+        subtab?: SubTab;
+        season?: ScoringSeason;
+        preseason?: boolean;
+      }) => {
       const next = new URLSearchParams(searchParams.toString());
 
       if (tab !== undefined) next.set(TAB_QUERY_KEY, tab);
@@ -527,7 +546,32 @@ export default function PlayerPageClient({
             )}
 
             {activeTab === "projections" && (
-              <ProjectionsCard current={current} cost={player.cost} />
+              <>
+                <nav className="flex gap-2 overflow-x-auto pb-1 scrollbar-none sm:pb-0">
+                  {PROJECTIONS_SUB_TABS.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() =>
+                        updateViewQuery({ tab: "projections", subtab: tab.key })
+                      }
+                      className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors md:text-sm ${
+                        activeProjectionsSubTab === tab.key
+                          ? "border-accent-light bg-accent-light/15 text-accent-light"
+                          : "border-border bg-surface text-muted hover:text-foreground"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+                {activeProjectionsSubTab === "rounds" && (
+                  <ProjectionsCard current={current} cost={player.cost} />
+                )}
+                {activeProjectionsSubTab === "model" && (
+                  <PriceModelCalculator current={current} cost={player.cost} />
+                )}
+              </>
             )}
 
             {activeTab === "matchups" && (

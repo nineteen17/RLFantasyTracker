@@ -80,7 +80,7 @@ export default function MatchDetailPage({
       <div className="flex items-center justify-between">
         <Link
           href={`/live?round=${roundId}`}
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-accent-light transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-accent-light md:text-base"
         >
           <span>&larr;</span>
           <span>Round {roundId}</span>
@@ -117,7 +117,7 @@ export default function MatchDetailPage({
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div
-              className={`text-2xl font-bold ${awayWon ? "text-muted/50" : ""}`}
+              className={`text-3xl font-bold ${awayWon ? "text-muted/50" : ""}`}
             >
               {match.homeSquadName}
             </div>
@@ -137,7 +137,7 @@ export default function MatchDetailPage({
           </div>
           <div className="flex-1 text-right">
             <div
-              className={`text-2xl font-bold ${homeWon ? "text-muted/50" : ""}`}
+              className={`text-3xl font-bold ${homeWon ? "text-muted/50" : ""}`}
             >
               {match.awaySquadName}
             </div>

@@ -80,7 +80,7 @@ export function ProjectionsCard({ current, cost }: ProjectionsCardProps) {
 
   return (
     <div className="rounded-lg border border-border bg-surface p-6">
-      <h2 className="text-xl font-bold">Projections & Price Predictor</h2>
+      <h2 className="text-xl font-bold">Round Price Predictor</h2>
 
       <div className="mt-4 space-y-5">
         {hasData ? (
