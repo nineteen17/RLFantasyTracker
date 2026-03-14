@@ -18,6 +18,8 @@ const HISTORY_SYNC_LOOKBACK_ROUNDS = Number.parseInt(
 
 /** In-memory match status tracker to detect transitions */
 let previousStatuses = new Map<number, string>();
+let previousRoundId: number | null = null;
+let lastHandledRoundCompletionId: number | null = null;
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let syncing = false;
 let historySyncing = false;
@@ -66,18 +68,68 @@ async function poll(): Promise<void> {
 		const activeRound = rounds.find((r) => r.status === "active");
 
 		if (!activeRound) {
-			logger.info(
-				"[Scheduler] No active round — polling again in 30 minutes",
-			);
+			const candidateRound =
+				previousRoundId != null
+					? rounds.find((round) => round.id === previousRoundId)
+					: undefined;
+			const roundBecameComplete =
+				candidateRound?.status === "complete" &&
+				candidateRound.matches.length > 0 &&
+				candidateRound.matches.every((match) => match.status === "complete");
+			const shouldHandleRoundCompletion =
+				roundBecameComplete &&
+				candidateRound.id !== lastHandledRoundCompletionId;
+
+			if (shouldHandleRoundCompletion) {
+				logger.info(
+					`[Scheduler] Round ${candidateRound.id} is complete and no longer active — running full sync + history sync`,
+				);
+				const syncSucceeded = await safeSyncRun("round-complete", () =>
+					runFullSync(),
+				);
+				let historySucceeded = true;
+
+				if (ENABLE_HISTORY_SYNC) {
+					historySucceeded = await safeHistorySyncRun(
+						"round-complete",
+						async () => {
+							await runOfficialHistoryIncrementalSync({
+								reason: "round-complete",
+								lookbackRounds:
+									Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
+									HISTORY_SYNC_LOOKBACK_ROUNDS > 0
+										? HISTORY_SYNC_LOOKBACK_ROUNDS
+										: 3,
+								targetRoundId: candidateRound.id,
+							});
+						},
+					);
+				}
+
+				if (syncSucceeded && historySucceeded) {
+					lastHandledRoundCompletionId = candidateRound.id;
+					previousRoundId = null;
+				} else {
+					logger.warn(
+						`[Scheduler] Round ${candidateRound.id} completion sync was not fully successful — will retry on next poll`,
+					);
+				}
+			} else {
+				previousRoundId = null;
+				logger.info(
+					"[Scheduler] No active round — polling again in 30 minutes",
+				);
+			}
+
 			previousStatuses.clear();
 			scheduleNextPoll(POLL_INTERVAL_IDLE);
 			return;
 		}
 
+		previousRoundId = activeRound.id;
+
 		const matches = activeRound.matches;
-		const currentStatuses = new Map(
-			matches.map((m) => [m.id, m.status]),
-		);
+		const currentStatuses = new Map(matches.map((m) => [m.id, m.status]));
 
 		// Detect match completions
 		const completedMatches: UpstreamMatch[] = [];
@@ -97,27 +149,34 @@ async function poll(): Promise<void> {
 			);
 
 			// Check if ALL matches in the round are now complete
-			const allComplete = matches.every(
-				(m) => m.status === "complete",
-			);
+			const allComplete = matches.every((m) => m.status === "complete");
 
 			if (allComplete) {
 				logger.info(
 					`[Scheduler] Round ${activeRound.id} fully complete — running full sync`,
 				);
-				await safeSyncRun("round-complete", () => runFullSync());
+				const syncSucceeded = await safeSyncRun("round-complete", () =>
+					runFullSync(),
+				);
+				let historySucceeded = true;
 				if (ENABLE_HISTORY_SYNC) {
-					await safeHistorySyncRun("round-complete", async () => {
-						await runOfficialHistoryIncrementalSync({
-							reason: "round-complete",
-							lookbackRounds:
-								Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
-								HISTORY_SYNC_LOOKBACK_ROUNDS > 0
-									? HISTORY_SYNC_LOOKBACK_ROUNDS
-									: 3,
-							targetRoundId: activeRound.id,
-						});
-					});
+					historySucceeded = await safeHistorySyncRun(
+						"round-complete",
+						async () => {
+							await runOfficialHistoryIncrementalSync({
+								reason: "round-complete",
+								lookbackRounds:
+									Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
+									HISTORY_SYNC_LOOKBACK_ROUNDS > 0
+										? HISTORY_SYNC_LOOKBACK_ROUNDS
+										: 3,
+								targetRoundId: activeRound.id,
+							});
+						},
+					);
+				}
+				if (syncSucceeded && historySucceeded) {
+					lastHandledRoundCompletionId = activeRound.id;
 				}
 			} else {
 				logger.info("[Scheduler] Running light sync after match completion");
@@ -140,9 +199,7 @@ async function poll(): Promise<void> {
 			// First poll after startup — log current state
 			const playing = matches.filter((m) => m.status === "playing").length;
 			const complete = matches.filter((m) => m.status === "complete").length;
-			const scheduled = matches.filter(
-				(m) => m.status === "scheduled",
-			).length;
+			const scheduled = matches.filter((m) => m.status === "scheduled").length;
 			logger.info(
 				`[Scheduler] Round ${activeRound.id}: ${playing} playing, ${complete} complete, ${scheduled} scheduled`,
 			);
@@ -169,12 +226,12 @@ function scheduleNextPoll(interval: number): void {
 async function safeSyncRun(
 	reason: string,
 	syncFn: () => Promise<unknown>,
-): Promise<void> {
+): Promise<boolean> {
 	if (syncing) {
 		logger.warn(
 			`[Scheduler] Sync already in progress — skipping (reason: ${reason})`,
 		);
-		return;
+		return false;
 	}
 
 	syncing = true;
@@ -186,10 +243,12 @@ async function safeSyncRun(
 		logger.info(
 			`[Scheduler] Sync complete (reason: ${reason}, took ${Date.now() - start}ms)`,
 		);
+		return true;
 	} catch (error) {
 		logger.error(
 			`[Scheduler] Sync failed (reason: ${reason}): ${error instanceof Error ? error.message : String(error)}`,
 		);
+		return false;
 	} finally {
 		syncing = false;
 	}
@@ -198,12 +257,12 @@ async function safeSyncRun(
 async function safeHistorySyncRun(
 	reason: string,
 	syncFn: () => Promise<unknown>,
-): Promise<void> {
+): Promise<boolean> {
 	if (historySyncing) {
 		logger.warn(
 			`[Scheduler] History sync already in progress — skipping (reason: ${reason})`,
 		);
-		return;
+		return false;
 	}
 
 	historySyncing = true;
@@ -215,10 +274,12 @@ async function safeHistorySyncRun(
 		logger.info(
 			`[Scheduler] History sync complete (reason: ${reason}, took ${Date.now() - start}ms)`,
 		);
+		return true;
 	} catch (error) {
 		logger.error(
 			`[Scheduler] History sync failed (reason: ${reason}): ${error instanceof Error ? error.message : String(error)}`,
 		);
+		return false;
 	} finally {
 		historySyncing = false;
 	}

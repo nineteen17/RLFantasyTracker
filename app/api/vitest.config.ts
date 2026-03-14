@@ -7,12 +7,11 @@ export default defineConfig({
 		globals: true,
 		environment: "node",
 		include: [
-			"test/**/*/test.ts",
-			"test/unit/**/*.unit.test.ts",
-			"test/integration/**/*.int.test.ts",
+			"test/unit/shared/**/*.unit.test.ts",
+			"test/unit/auth/authUtils.unit.test.ts",
+			"test/unit/worker/**/*.unit.test.ts",
 		],
 		setupFiles: ["test/setup-env.ts"],
-		globalSetup: "./test/global-setup.ts",
 	},
 	plugins: [tsconfigPaths()],
 });

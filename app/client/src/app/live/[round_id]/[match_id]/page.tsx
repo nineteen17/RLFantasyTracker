@@ -61,18 +61,29 @@ export default function MatchDetailPage({
   const homeWon = isComplete && match.homeScore > match.awayScore;
   const awayWon = isComplete && match.awayScore > match.homeScore;
 
-  function formatClock(clock?: { p: number | string; s: number }): string {
-    if (!clock) return "";
-    if (clock.s < 0) return "HT";
+  function formatClock(clock?: {
+    p: number | string;
+    s: number;
+  }): { label: string; isAwaitingFullTime: boolean } {
+    if (!clock) return { label: "", isAwaitingFullTime: false };
     const mins = Math.max(0, Math.floor(clock.s / 60));
     const rawPeriod = String(clock.p).toUpperCase();
-    const period = rawPeriod.includes("2")
-      ? "2nd"
-      : rawPeriod.includes("1")
-        ? "1st"
-        : "1st";
-    return `${mins}' (${period})`;
+    const isSecondPeriod = rawPeriod.includes("2");
+    if (clock.s < 0) {
+      return {
+        label: isSecondPeriod ? "Awaiting FT" : "HT",
+        isAwaitingFullTime: isSecondPeriod,
+      };
+    }
+    const period = isSecondPeriod ? "2nd" : "1st";
+    return {
+      label: `${mins}' (${period})`,
+      isAwaitingFullTime: false,
+    };
   }
+
+  const clockDisplay = formatClock(match.clock);
+  const isAwaitingFullTime = isPlaying && clockDisplay.isAwaitingFullTime;
 
   return (
     <div className="space-y-6">
@@ -95,18 +106,22 @@ export default function MatchDetailPage({
           <div className="flex items-center gap-2">
             {isPlaying && match.clock && (
               <span className="font-mono text-sm text-accent-light">
-                {formatClock(match.clock)}
+                {clockDisplay.label}
               </span>
             )}
             <span
               className={`rounded px-2.5 py-1 text-xs font-medium ${
                 isPlaying
-                  ? "bg-danger/15 text-danger"
+                  ? isAwaitingFullTime
+                    ? "bg-amber-500/15 text-amber-300"
+                    : "bg-danger/15 text-danger"
                   : "bg-surface-alt text-muted"
               }`}
             >
               {isPlaying
-                ? "LIVE"
+                ? isAwaitingFullTime
+                  ? "FT Soon"
+                  : "LIVE"
                 : isComplete
                   ? "Full Time"
                   : formatMatchDate(match.date, tz)}
@@ -114,30 +129,30 @@ export default function MatchDetailPage({
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="min-w-0 flex-1">
             <div
-              className={`text-3xl font-bold ${awayWon ? "text-muted/50" : ""}`}
+              className={`truncate text-xl font-bold leading-tight sm:text-3xl ${awayWon ? "text-muted/50" : ""}`}
             >
               {match.homeSquadName}
             </div>
           </div>
-          <div className="flex items-center gap-4 px-6">
+          <div className="shrink-0 flex items-center gap-2 px-2 sm:gap-4 sm:px-6">
             <span
-              className={`text-4xl font-bold tabular-nums ${homeWon ? "text-accent-light" : awayWon ? "text-muted/50" : ""}`}
+              className={`text-3xl font-bold tabular-nums sm:text-4xl ${homeWon ? "text-accent-light" : awayWon ? "text-muted/50" : ""}`}
             >
               {match.homeScore}
             </span>
             <span className="text-xl text-muted">-</span>
             <span
-              className={`text-4xl font-bold tabular-nums ${awayWon ? "text-accent-light" : homeWon ? "text-muted/50" : ""}`}
+              className={`text-3xl font-bold tabular-nums sm:text-4xl ${awayWon ? "text-accent-light" : homeWon ? "text-muted/50" : ""}`}
             >
               {match.awayScore}
             </span>
           </div>
-          <div className="flex-1 text-right">
+          <div className="min-w-0 flex-1 text-right">
             <div
-              className={`text-3xl font-bold ${homeWon ? "text-muted/50" : ""}`}
+              className={`truncate text-xl font-bold leading-tight sm:text-3xl ${homeWon ? "text-muted/50" : ""}`}
             >
               {match.awaySquadName}
             </div>

@@ -195,18 +195,29 @@ function MatchScoreCard({
   const homeWon = isComplete && match.homeScore > match.awayScore;
   const awayWon = isComplete && match.awayScore > match.homeScore;
 
-  function formatClock(clock?: { p: number | string; s: number }): string {
-    if (!clock) return "";
-    if (clock.s < 0) return "HT";
+  function formatClock(clock?: {
+    p: number | string;
+    s: number;
+  }): { label: string; isAwaitingFullTime: boolean } {
+    if (!clock) return { label: "", isAwaitingFullTime: false };
     const mins = Math.max(0, Math.floor(clock.s / 60));
     const rawPeriod = String(clock.p).toUpperCase();
-    const period = rawPeriod.includes("2")
-      ? "2nd"
-      : rawPeriod.includes("1")
-        ? "1st"
-        : "1st";
-    return `${mins}' (${period})`;
+    const isSecondPeriod = rawPeriod.includes("2");
+    if (clock.s < 0) {
+      return {
+        label: isSecondPeriod ? "Awaiting FT" : "HT",
+        isAwaitingFullTime: isSecondPeriod,
+      };
+    }
+    const period = isSecondPeriod ? "2nd" : "1st";
+    return {
+      label: `${mins}' (${period})`,
+      isAwaitingFullTime: false,
+    };
   }
+
+  const clockDisplay = formatClock(match.clock);
+  const isAwaitingFullTime = isLive && clockDisplay.isAwaitingFullTime;
 
   return (
     <Link
@@ -220,20 +231,24 @@ function MatchScoreCard({
         <div className="flex items-center gap-2 shrink-0">
           {isLive && match.clock && (
             <span className="font-mono text-xs text-accent-light">
-              {formatClock(match.clock)}
+              {clockDisplay.label}
             </span>
           )}
           <span
             className={`rounded px-2 py-0.5 text-xs font-medium ${
               isLive
-                ? "bg-danger text-white"
+                ? isAwaitingFullTime
+                  ? "bg-amber-500/20 text-amber-200"
+                  : "bg-danger text-white"
                 : isComplete
                   ? "bg-surface-alt text-muted"
                   : "bg-surface-alt text-muted/60"
             }`}
           >
             {isLive
-              ? "LIVE"
+              ? isAwaitingFullTime
+                ? "FT Soon"
+                : "LIVE"
               : isComplete
                 ? "FT"
                 : formatMatchDate(match.date, tz)}
@@ -242,9 +257,9 @@ function MatchScoreCard({
       </div>
 
       <div className="flex flex-1 items-center justify-between">
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <div
-            className={`text-lg font-bold ${awayWon ? "text-muted/50" : ""}`}
+            className={`truncate text-lg font-bold ${awayWon ? "text-muted/50" : ""}`}
           >
             {match.homeSquadName}
           </div>
@@ -262,9 +277,9 @@ function MatchScoreCard({
             {match.awayScore}
           </span>
         </div>
-        <div className="flex-1 text-right">
+        <div className="min-w-0 flex-1 text-right">
           <div
-            className={`text-lg font-bold ${homeWon ? "text-muted/50" : ""}`}
+            className={`truncate text-lg font-bold ${homeWon ? "text-muted/50" : ""}`}
           >
             {match.awaySquadName}
           </div>
