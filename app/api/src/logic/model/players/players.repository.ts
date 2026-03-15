@@ -196,6 +196,8 @@ function canonicalizePosition(rawValue: unknown): string | null {
 		case "five eighth":
 		case "5/8":
 			return "Five-Eighth";
+		case "half":
+		case "half back":
 		case "halfback":
 			return "Halfback";
 		case "hooker":

@@ -46,6 +46,8 @@ function canonicalizePosition(value: string | null | undefined): string | null {
     case "five eighth":
     case "5/8":
       return "Five-Eighth";
+    case "half":
+    case "half back":
     case "halfback":
       return "Halfback";
     case "hooker":
@@ -161,7 +163,7 @@ export function PositionSplits({
       const position = canonicalizePosition(match.derivedPosition)
         ?? canonicalizePosition(match.positionMatch)
         ?? deriveFromJersey(match.jerseyNumber)
-        ?? listedFallback;
+        ?? canonicalizePosition(listedFallback);
       if (!position) continue;
 
       tagged.push({
