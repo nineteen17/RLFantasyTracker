@@ -410,6 +410,7 @@ export default function PlayerPageClient({
                   current={current}
                   positions={player.positions}
                   cost={player.cost}
+                  historyMatches={scopedHistoryMatches}
                 />
                 <OwnershipCard current={current} />
               </div>

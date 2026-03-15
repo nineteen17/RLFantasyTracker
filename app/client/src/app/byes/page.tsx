@@ -1,6 +1,7 @@
 import type { ByePlannerResponse } from "@nrl/types";
 import { ErrorState } from "@/components/ui/error-state";
 import { apiFetchServer } from "@/lib/api-server";
+import { HistoryCloseButton } from "./components/history-close-button";
 
 export const revalidate = 3600;
 
@@ -24,6 +25,33 @@ export default async function ByePlannerPage() {
   const rounds = data?.data.rounds ?? [];
   const teams = data?.data.teams ?? [];
   const season = data?.data.season ?? new Date().getFullYear();
+  const sortedRounds = [...rounds].sort((a, b) => a - b);
+  const teamsInStableOrder = [...teams].sort((a, b) => {
+    const aByes = [...(a.byeRounds ?? [])].sort((x, y) => x - y);
+    const bByes = [...(b.byeRounds ?? [])].sort((x, y) => x - y);
+    const aFirstBye = aByes[0] ?? sortedRounds[sortedRounds.length - 1] ?? 999;
+    const bFirstBye = bByes[0] ?? sortedRounds[sortedRounds.length - 1] ?? 999;
+
+    if (aFirstBye !== bFirstBye) {
+      return aFirstBye - bFirstBye;
+    }
+
+    const byeCount = Math.max(aByes.length, bByes.length);
+    for (let i = 0; i < byeCount; i += 1) {
+      const aRound = aByes[i] ?? 999;
+      const bRound = bByes[i] ?? 999;
+      if (aRound !== bRound) {
+        return aRound - bRound;
+      }
+    }
+
+    const nameCompare = a.name.localeCompare(b.name);
+    if (nameCompare !== 0) {
+      return nameCompare;
+    }
+
+    return Number(a.squadId) - Number(b.squadId);
+  });
 
   if (rounds.length === 0 || teams.length === 0) {
     return (
@@ -36,9 +64,15 @@ export default async function ByePlannerPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Bye Planner</h1>
-        <p className="mt-2 text-muted">{season} bye rounds by team.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">Bye Planner</h1>
+          <p className="mt-2 text-muted">{season} bye rounds by team.</p>
+        </div>
+        <HistoryCloseButton
+          fallbackHref="/players/search"
+          ariaLabel="Close bye planner"
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-surface">
@@ -60,9 +94,9 @@ export default async function ByePlannerPage() {
               </tr>
             </thead>
             <tbody>
-              {teams.map((team, teamIdx) => {
+              {teamsInStableOrder.map((team, teamIdx) => {
                 const byeRounds = new Set<number>(team.byeRounds);
-                const isLastRow = teamIdx === teams.length - 1;
+                const isLastRow = teamIdx === teamsInStableOrder.length - 1;
                 return (
                   <tr key={team.squadId}>
                     <th
@@ -73,7 +107,8 @@ export default async function ByePlannerPage() {
                       }`}
                     >
                       <div className="max-w-[42px] truncate text-[10px] font-semibold sm:max-w-none sm:text-xs lg:text-sm">
-                        {team.shortName ?? team.name}
+                        <span className="lg:hidden">{team.shortName ?? team.name}</span>
+                        <span className="hidden lg:inline">{team.name}</span>
                       </div>
                       <div className="hidden text-[10px] text-muted sm:block">
                         Next:{" "}

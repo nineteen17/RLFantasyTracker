@@ -75,7 +75,7 @@ export default function MobileMenu() {
             <button
               onClick={toggleMenu}
               className="brand-nav-icon-button rounded-md p-2 text-muted transition-colors hover:text-accent-light"
-              aria-label="Open menu"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
             >
               <Menu />
             </button>

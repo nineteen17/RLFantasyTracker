@@ -1,4 +1,5 @@
-import type { PlayerCurrent } from "@nrl/types";
+import { useMemo } from "react";
+import type { PlayerCurrent, PlayerHistoryMatch } from "@nrl/types";
 import { formatNumber } from "@/lib/utils";
 import { POSITION_LABELS } from "@/lib/constants";
 import { estimateAverageFromPrice } from "@/lib/price-model";
@@ -7,6 +8,7 @@ interface StatsOverviewProps {
   current: PlayerCurrent;
   positions: number[];
   cost: number;
+  historyMatches: PlayerHistoryMatch[];
 }
 
 function FormRow({
@@ -81,10 +83,25 @@ function formatOrdinal(value: number | string | null | undefined): string {
   return `${abs}th`;
 }
 
-export function StatsOverview({ current, positions, cost }: StatsOverviewProps) {
+export function StatsOverview({ current, positions, cost, historyMatches }: StatsOverviewProps) {
   const nextBE = getNextBreakEven(current);
   const posRanks = getPositionRanks(current, positions);
   const pricedAtAverage = estimateAverageFromPrice(cost);
+
+  const minutesStats = useMemo(() => {
+    const currentSeason = new Date().getFullYear();
+    const togValues = historyMatches
+      .filter((m) => m.season === currentSeason)
+      .map((m) => m.stats.TOG)
+      .filter((v) => v > 0);
+    if (togValues.length === 0) return null;
+    const avg = togValues.reduce((sum, v) => sum + v, 0) / togValues.length;
+    return {
+      avg: Math.round(avg),
+      high: Math.max(...togValues),
+      low: Math.min(...togValues),
+    };
+  }, [historyMatches]);
 
   return (
     <div className="space-y-3">
@@ -112,13 +129,21 @@ export function StatsOverview({ current, positions, cost }: StatsOverviewProps) 
       </div>
 
       {/* Secondary metrics row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-border/60 bg-surface px-3 py-2.5 md:px-4 md:py-3">
           <p className="text-[10px] font-medium tracking-wide text-muted/80 uppercase md:text-xs">
             Games
           </p>
           <p className="mt-1 text-base font-semibold tabular-nums md:text-lg">
             {current.gamesPlayed ?? "-"}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-surface px-3 py-2.5 md:px-4 md:py-3">
+          <p className="text-[10px] font-medium tracking-wide text-muted/80 uppercase md:text-xs">
+            PPM
+          </p>
+          <p className="mt-1 text-base font-semibold tabular-nums md:text-lg">
+            {formatNumber(current.ppmSeason)}
           </p>
         </div>
         <div className="rounded-lg border border-border/60 bg-surface px-3 py-2.5 md:px-4 md:py-3">
@@ -152,7 +177,7 @@ export function StatsOverview({ current, positions, cost }: StatsOverviewProps) 
         </div>
       </div>
 
-      {/* Scoring form + Range */}
+      {/* Scoring form + Minutes */}
       <div className="grid gap-3 xl:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-surface p-4 md:p-5">
           <h3 className="flex items-center gap-2 text-sm font-semibold md:text-base">
@@ -160,12 +185,10 @@ export function StatsOverview({ current, positions, cost }: StatsOverviewProps) 
             Scoring Form
           </h3>
           <div className="mt-3 divide-y divide-border/40">
-            <FormRow label="Total Points" value={current.totalPoints ?? "-"} />
             <FormRow
               label="Career Avg"
               value={formatNumber(current.careerAvg)}
             />
-            <FormRow label="PPM" value={formatNumber(current.ppmSeason)} />
             <FormRow
               label="Last 3 Avg"
               value={formatNumber(current.last3Avg)}
@@ -176,34 +199,29 @@ export function StatsOverview({ current, positions, cost }: StatsOverviewProps) 
               value={formatNumber(current.last5Avg)}
               highlight
             />
+            <FormRow label="High Score" value={current.highScore ?? "-"} />
+            <FormRow label="Low Score" value={current.lowScore ?? "-"} />
           </div>
         </div>
 
         <div className="rounded-xl border border-border/60 bg-surface p-4 md:p-5">
           <h3 className="flex items-center gap-2 text-sm font-semibold md:text-base">
             <span className="inline-block h-3 w-0.5 rounded-full bg-accent-light" />
-            Range
+            Minutes
           </h3>
           <div className="mt-3 divide-y divide-border/40">
-            <FormRow label="High Score" value={current.highScore ?? "-"} />
-            <FormRow label="Low Score" value={current.lowScore ?? "-"} />
-            {current.highScore != null && current.lowScore != null && (
-              <div className="py-3">
-                <div className="flex items-center justify-between text-[10px] font-medium text-muted uppercase md:text-xs">
-                  <span>{current.lowScore}</span>
-                  <span>Spread</span>
-                  <span>{current.highScore}</span>
-                </div>
-                <div className="relative mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
-                  <div
-                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-light"
-                    style={{
-                      width: `${Math.min(100, Math.max(10, ((Number(current.highScore) - Number(current.lowScore)) / Math.max(1, Number(current.highScore))) * 100))}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
+            <FormRow
+              label="Avg TOG"
+              value={minutesStats ? `${minutesStats.avg}'` : formatNumber(current.tog)}
+            />
+            <FormRow
+              label="Highest"
+              value={minutesStats ? `${minutesStats.high}'` : "-"}
+            />
+            <FormRow
+              label="Lowest"
+              value={minutesStats ? `${minutesStats.low}'` : "-"}
+            />
           </div>
         </div>
       </div>

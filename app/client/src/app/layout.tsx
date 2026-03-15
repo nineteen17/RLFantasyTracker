@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
-import MobileMenu from "@/components/ui/mobile-menu";
-import DesktopNav from "@/components/ui/desktop-nav";
+import NavigationShell from "@/components/ui/navigation-shell";
 import GoogleAnalytics from "@/components/analytics/google-analytics";
 import { EngagedSessionTracker } from "@/components/analytics/engaged-session-tracker";
 
@@ -72,8 +71,7 @@ export default function RootLayout({
           <Suspense>
             <GoogleAnalytics />
             <EngagedSessionTracker />
-            <MobileMenu />
-            <DesktopNav />
+            <NavigationShell />
           </Suspense>
 
           <main className="mx-auto max-w-[1600px] px-4 pb-20 pt-24 sm:px-6 md:pt-28 lg:px-8">
