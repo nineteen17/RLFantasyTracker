@@ -1,54 +1,33 @@
 import type { PlayerCurrent } from "@nrl/types";
 import { formatNumber } from "@/lib/utils";
 import { POSITION_LABELS } from "@/lib/constants";
+import { estimateAverageFromPrice } from "@/lib/price-model";
 
 interface StatsOverviewProps {
   current: PlayerCurrent;
   positions: number[];
+  cost: number;
 }
 
-function MetricTile({
+function FormRow({
   label,
   value,
-  tone = "default",
-  compact = false,
+  highlight = false,
 }: {
   label: string;
   value: string | number;
-  tone?: "default" | "accent";
-  compact?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-lg border p-3 ${
-        tone === "accent"
-          ? "border-accent-light/30 bg-accent-light/10"
-          : "border-border bg-surface-alt/35"
-      }`}
-    >
-      <p className="text-xs text-muted md:text-sm">{label}</p>
-      <p
-        className={`mt-1 font-semibold tabular-nums ${
-          compact ? "text-base leading-tight md:text-lg" : "text-lg md:text-xl"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number;
+  highlight?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-2">
       <span className="text-sm text-muted md:text-base">{label}</span>
-      <span className="text-sm font-semibold tabular-nums md:text-base">{value}</span>
+      <span
+        className={`text-sm font-semibold tabular-nums md:text-base ${
+          highlight ? "text-accent-light" : ""
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -102,68 +81,129 @@ function formatOrdinal(value: number | string | null | undefined): string {
   return `${abs}th`;
 }
 
-function formatPositionRankValue(posRanks: Array<{ rank: number; label: string }>) {
-  if (posRanks.length === 0) return "-";
-  return posRanks
-    .map((posRank) => `${posRank.label} ${formatOrdinal(posRank.rank)}`)
-    .join(" / ");
-}
-
-export function StatsOverview({ current, positions }: StatsOverviewProps) {
+export function StatsOverview({ current, positions, cost }: StatsOverviewProps) {
   const nextBE = getNextBreakEven(current);
   const posRanks = getPositionRanks(current, positions);
-  const positionRankValue = formatPositionRankValue(posRanks);
+  const pricedAtAverage = estimateAverageFromPrice(cost);
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 md:p-6">
-      <h2 className="text-xl font-bold">Stats Overview</h2>
-      <p className="mt-1 text-sm text-muted md:text-base">
-        Form, output, and context at a glance.
-      </p>
-
-      <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <MetricTile
-          label="Avg Points"
-          value={formatNumber(current.avgPoints)}
-          tone="accent"
-        />
-        <MetricTile
-          label="Position Rank"
-          value={positionRankValue}
-          compact
-        />
-        <MetricTile label="Games Played" value={current.gamesPlayed ?? "-"} />
-        <MetricTile
-          label={nextBE ? `Break Even (R${nextBE.round})` : "Break Even"}
-          value={nextBE ? nextBE.be : "-"}
-        />
+    <div className="space-y-3">
+      {/* Hero pair: Average + Break Even */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="overflow-hidden rounded-xl border border-accent-light/20 bg-gradient-to-br from-accent-light/[0.08] to-accent/[0.04] p-4 md:p-5">
+          <p className="text-xs font-medium tracking-wide text-accent-light/70 uppercase md:text-sm">
+            Average
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight md:text-3xl">
+            {formatNumber(current.avgPoints)}
+          </p>
+          <p className="mt-0.5 text-xs text-muted md:text-sm">
+            {formatNumber(pricedAtAverage)} priced avg
+          </p>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-accent-light/20 bg-gradient-to-br from-accent-light/[0.08] to-accent/[0.04] p-4 md:p-5">
+          <p className="text-xs font-medium tracking-wide text-accent-light/70 uppercase md:text-sm">
+            {nextBE ? `BE (R${nextBE.round})` : "Break Even"}
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight md:text-3xl">
+            {nextBE ? nextBE.be : "-"}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-3 xl:grid-cols-2">
-        <div className="rounded-lg border border-border bg-surface-alt/25 p-3.5 md:p-4">
-          <h3 className="text-sm font-semibold text-foreground md:text-base">
+      {/* Secondary metrics row */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-lg border border-border/60 bg-surface px-3 py-2.5 md:px-4 md:py-3">
+          <p className="text-[10px] font-medium tracking-wide text-muted/80 uppercase md:text-xs">
+            Games
+          </p>
+          <p className="mt-1 text-base font-semibold tabular-nums md:text-lg">
+            {current.gamesPlayed ?? "-"}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-surface px-3 py-2.5 md:px-4 md:py-3">
+          <p className="text-[10px] font-medium tracking-wide text-muted/80 uppercase md:text-xs">
+            Season Rank
+          </p>
+          <p className="mt-1 text-base font-semibold tabular-nums md:text-lg">
+            {formatOrdinal(current.seasonRank)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-surface px-3 py-2.5 md:px-4 md:py-3">
+          <p className="text-[10px] font-medium tracking-wide text-muted/80 uppercase md:text-xs">
+            Position Rank
+          </p>
+          {posRanks.length === 0 ? (
+            <p className="mt-1 text-sm font-semibold tabular-nums md:text-base">-</p>
+          ) : (
+            <>
+              <div className="mt-1 space-y-0.5 md:hidden">
+                {posRanks.map((pr) => (
+                  <p key={pr.label} className="text-sm font-semibold tabular-nums">
+                    {pr.label} {formatOrdinal(pr.rank)}
+                  </p>
+                ))}
+              </div>
+              <p className="mt-1 hidden text-base font-semibold tabular-nums md:block">
+                {posRanks.map((pr) => `${pr.label} ${formatOrdinal(pr.rank)}`).join(" / ")}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Scoring form + Range */}
+      <div className="grid gap-3 xl:grid-cols-2">
+        <div className="rounded-xl border border-border/60 bg-surface p-4 md:p-5">
+          <h3 className="flex items-center gap-2 text-sm font-semibold md:text-base">
+            <span className="inline-block h-3 w-0.5 rounded-full bg-accent-light" />
             Scoring Form
           </h3>
-          <div className="mt-2 divide-y divide-border/50">
-            <DetailRow label="Total Points" value={current.totalPoints ?? "-"} />
-            <DetailRow label="Career Avg" value={formatNumber(current.careerAvg)} />
-            <DetailRow label="PPM" value={formatNumber(current.ppmSeason)} />
-            <DetailRow label="Last 3 Avg" value={formatNumber(current.last3Avg)} />
-            <DetailRow label="Last 5 Avg" value={formatNumber(current.last5Avg)} />
+          <div className="mt-3 divide-y divide-border/40">
+            <FormRow label="Total Points" value={current.totalPoints ?? "-"} />
+            <FormRow
+              label="Career Avg"
+              value={formatNumber(current.careerAvg)}
+            />
+            <FormRow label="PPM" value={formatNumber(current.ppmSeason)} />
+            <FormRow
+              label="Last 3 Avg"
+              value={formatNumber(current.last3Avg)}
+              highlight
+            />
+            <FormRow
+              label="Last 5 Avg"
+              value={formatNumber(current.last5Avg)}
+              highlight
+            />
           </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-surface-alt/25 p-3.5 md:p-4">
-          <h3 className="text-sm font-semibold text-foreground md:text-base">
-            Range & Rank
+        <div className="rounded-xl border border-border/60 bg-surface p-4 md:p-5">
+          <h3 className="flex items-center gap-2 text-sm font-semibold md:text-base">
+            <span className="inline-block h-3 w-0.5 rounded-full bg-accent-light" />
+            Range
           </h3>
-          <div className="mt-2 divide-y divide-border/50">
-            <DetailRow label="High Score" value={current.highScore ?? "-"} />
-            <DetailRow label="Low Score" value={current.lowScore ?? "-"} />
-            <DetailRow
-              label="Season Rank"
-              value={formatOrdinal(current.seasonRank)}
-            />
+          <div className="mt-3 divide-y divide-border/40">
+            <FormRow label="High Score" value={current.highScore ?? "-"} />
+            <FormRow label="Low Score" value={current.lowScore ?? "-"} />
+            {current.highScore != null && current.lowScore != null && (
+              <div className="py-3">
+                <div className="flex items-center justify-between text-[10px] font-medium text-muted uppercase md:text-xs">
+                  <span>{current.lowScore}</span>
+                  <span>Spread</span>
+                  <span>{current.highScore}</span>
+                </div>
+                <div className="relative mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-light"
+                    style={{
+                      width: `${Math.min(100, Math.max(10, ((Number(current.highScore) - Number(current.lowScore)) / Math.max(1, Number(current.highScore))) * 100))}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

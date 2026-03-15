@@ -405,15 +405,14 @@ export default function PlayerPageClient({
 
           <div className="space-y-6">
             {activeTab === "overview" && (
-              <>
-                <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-                  <StatsOverview
-                    current={current}
-                    positions={player.positions}
-                  />
-                  <OwnershipCard current={current} />
-                </div>
-              </>
+              <div className="grid gap-3 xl:grid-cols-[1.4fr_1fr]">
+                <StatsOverview
+                  current={current}
+                  positions={player.positions}
+                  cost={player.cost}
+                />
+                <OwnershipCard current={current} />
+              </div>
             )}
 
             {activeTab === "scoring" && (

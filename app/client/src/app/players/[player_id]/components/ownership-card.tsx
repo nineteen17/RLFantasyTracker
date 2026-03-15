@@ -151,85 +151,158 @@ function formatSignedCount(value: number | null): string {
   return rounded.toLocaleString();
 }
 
-function MetricTile({ label, value }: { label: string; value: string | number }) {
+function parsePercentValue(pct: number | string | null | undefined): number {
+  if (pct == null) return 0;
+  const n = typeof pct === "string" ? Number.parseFloat(pct) : pct;
+  return Number.isFinite(n) ? n : 0;
+}
+
+function PercentBar({
+  label,
+  value,
+  max = 100,
+}: {
+  label: string;
+  value: number | string | null | undefined;
+  max?: number;
+}) {
+  const pct = parsePercentValue(value);
+  const width = Math.min(100, Math.max(0, (pct / max) * 100));
+
   return (
-    <div className="rounded-lg border border-border bg-surface-alt/35 p-3">
-      <p className="text-xs text-muted md:text-sm">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums md:text-xl">{value}</p>
+    <div className="py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-muted md:text-base">{label}</span>
+        <span className="text-sm font-semibold tabular-nums md:text-base">
+          {formatPercent(value)}
+        </span>
+      </div>
+      <div className="relative mt-1.5 h-1 w-full overflow-hidden rounded-full bg-surface-alt">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-light transition-all duration-500"
+          style={{ width: `${width}%` }}
+        />
+      </div>
     </div>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string | number }) {
+function TradeFlowRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "positive" | "negative" | "neutral";
+}) {
+  const toneClass =
+    tone === "positive"
+      ? "text-green-400"
+      : tone === "negative"
+        ? "text-red-400"
+        : "";
+
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 py-2">
       <span className="text-sm text-muted md:text-base">{label}</span>
-      <span className="text-sm font-semibold tabular-nums md:text-base">{value}</span>
+      <span
+        className={`text-sm font-semibold tabular-nums md:text-base ${toneClass}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
 
 export function OwnershipCard({ current }: OwnershipCardProps) {
   const transfers = extractTransferSnapshot(current.transfers);
+  const ownedPct = parsePercentValue(current.ownedBy);
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 md:p-6">
-      <h2 className="text-xl font-bold">Ownership</h2>
-      <p className="mt-1 text-sm text-muted md:text-base">
-        Selection and captaincy market snapshot.
-      </p>
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <MetricTile label="Owned By" value={formatPercent(current.ownedBy)} />
-        <MetricTile label="Selections" value={current.selections ?? "-"} />
-      </div>
-
-      <div className="mt-4 rounded-lg border border-border bg-surface-alt/25 p-3.5 md:p-4">
-        <h3 className="text-sm font-semibold text-foreground md:text-base">
-          Captaincy Split
-        </h3>
-        <div className="mt-2 divide-y divide-border/50">
-          <DetailRow label="Captain %" value={formatPercent(current.captainPct)} />
-          <DetailRow
-            label="Vice Captain %"
-            value={formatPercent(current.vcPct)}
+    <div className="space-y-3">
+      {/* Owned by - hero treatment */}
+      <div className="relative overflow-hidden rounded-xl border border-accent-light/20 bg-gradient-to-br from-accent-light/[0.08] to-accent/[0.04] p-4 md:p-5">
+        <p className="text-xs font-medium tracking-wide text-accent-light/70 uppercase md:text-sm">
+          Ownership
+        </p>
+        <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight md:text-3xl">
+          {formatPercent(current.ownedBy)}
+        </p>
+        <div className="relative mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-light transition-all duration-500"
+            style={{ width: `${Math.min(100, ownedPct)}%` }}
           />
-          <DetailRow label="Bench %" value={formatPercent(current.benchPct)} />
         </div>
+        {current.selections != null && (
+          <p className="mt-2 text-xs text-muted md:text-sm">
+            {Number(current.selections).toLocaleString()} selections
+          </p>
+        )}
       </div>
 
-      <div className="mt-3 rounded-lg border border-border bg-surface-alt/25 p-3.5 md:p-4">
-        <h3 className="text-sm font-semibold text-foreground md:text-base">
-          Draft / Market
+      {/* Captaincy */}
+      <div className="rounded-xl border border-border/60 bg-surface p-4 md:p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold md:text-base">
+          <span className="inline-block h-3 w-0.5 rounded-full bg-accent-light" />
+          Captaincy
         </h3>
-        <div className="mt-2 divide-y divide-border/50">
-          <DetailRow label="Avg Draft Position" value={current.adp ?? "-"} />
+        <div className="mt-3 space-y-0.5">
+          <PercentBar label="Captain" value={current.captainPct} max={30} />
+          <PercentBar label="Vice Captain" value={current.vcPct} max={30} />
+          <PercentBar label="Bench" value={current.benchPct} />
         </div>
       </div>
 
-      {transfers && (
-        <div className="mt-3 rounded-lg border border-border bg-surface-alt/25 p-3.5 md:p-4">
-          <h3 className="text-sm font-semibold text-foreground md:text-base">
-            Trade Flow
-          </h3>
-          <div className="mt-2 divide-y divide-border/50">
-            {transfers.tradeIns != null && (
-              <DetailRow label="Trades In" value={formatCount(transfers.tradeIns)} />
-            )}
-            {transfers.tradeOuts != null && (
-              <DetailRow
-                label="Trades Out"
-                value={formatCount(transfers.tradeOuts)}
-              />
-            )}
-            {transfers.netTrades != null && (
-              <DetailRow
-                label="Net Trades"
-                value={formatSignedCount(transfers.netTrades)}
-              />
-            )}
+      {/* Draft + Trade Flow */}
+      <div className="rounded-xl border border-border/60 bg-surface p-4 md:p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold md:text-base">
+          <span className="inline-block h-3 w-0.5 rounded-full bg-accent-light" />
+          Market
+        </h3>
+        <div className="mt-3 divide-y divide-border/40">
+          <div className="flex items-center justify-between gap-3 py-2">
+            <span className="text-sm text-muted md:text-base">
+              Avg Draft Position
+            </span>
+            <span className="text-sm font-semibold tabular-nums md:text-base">
+              {current.adp ?? "-"}
+            </span>
           </div>
+          {transfers && (
+            <>
+              {transfers.tradeIns != null && (
+                <TradeFlowRow
+                  label="Trades In"
+                  value={formatCount(transfers.tradeIns)}
+                  tone="positive"
+                />
+              )}
+              {transfers.tradeOuts != null && (
+                <TradeFlowRow
+                  label="Trades Out"
+                  value={formatCount(transfers.tradeOuts)}
+                  tone="negative"
+                />
+              )}
+              {transfers.netTrades != null && (
+                <TradeFlowRow
+                  label="Net"
+                  value={formatSignedCount(transfers.netTrades)}
+                  tone={
+                    transfers.netTrades > 0
+                      ? "positive"
+                      : transfers.netTrades < 0
+                        ? "negative"
+                        : "neutral"
+                  }
+                />
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
