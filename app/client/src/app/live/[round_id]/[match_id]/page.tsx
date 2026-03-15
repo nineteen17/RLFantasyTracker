@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLiveRound, useLiveRoundStats } from "@/hooks/api/use-live";
 import { useTimezone } from "@/hooks/use-timezone";
 import { formatMatchDate } from "@/lib/timezone";
@@ -19,6 +20,10 @@ export default function MatchDetailPage({
   const { round_id, match_id } = use(params);
   const roundId = Number(round_id);
   const matchId = Number(match_id);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const selectedTeam = searchParams.get("team") === "away" ? "away" : "home";
 
   const [tz] = useTimezone();
   const { data: roundData, isLoading, error } = useLiveRound(roundId);
@@ -84,6 +89,13 @@ export default function MatchDetailPage({
 
   const clockDisplay = formatClock(match.clock);
   const isAwaitingFullTime = isPlaying && clockDisplay.isAwaitingFullTime;
+  const handleTeamChange = (team: "home" | "away") => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (team === "home") next.delete("team");
+    else next.set("team", "away");
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
@@ -173,6 +185,8 @@ export default function MatchDetailPage({
           awaySquadName={match.awaySquadName}
           homePlayers={homePlayers}
           awayPlayers={awayPlayers}
+          selectedTeam={selectedTeam}
+          onTeamChange={handleTeamChange}
           returnTo={`/live/${roundId}/${matchId}`}
           isLoading={statsLoading}
         />

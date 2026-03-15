@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import type { LivePlayerStat } from "@nrl/types";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
@@ -13,6 +12,8 @@ interface MatchStatsPanelProps {
   awaySquadName: string;
   homePlayers: LivePlayerStat[];
   awayPlayers: LivePlayerStat[];
+  selectedTeam: "home" | "away";
+  onTeamChange: (team: "home" | "away") => void;
   returnTo?: string;
   isLoading?: boolean;
 }
@@ -30,11 +31,11 @@ export function MatchStatsPanel({
   awaySquadName,
   homePlayers,
   awayPlayers,
+  selectedTeam,
+  onTeamChange,
   returnTo,
   isLoading = false,
 }: MatchStatsPanelProps) {
-  const [selectedTeam, setSelectedTeam] = useState<"home" | "away">("home");
-
   if (isLoading) {
     return (
       <div className="space-y-4 p-4">
@@ -65,7 +66,7 @@ export function MatchStatsPanel({
           <div className="grid grid-cols-2 gap-2 rounded-full border border-border bg-surface-alt p-1 text-sm">
             <button
               type="button"
-              onClick={() => setSelectedTeam("home")}
+              onClick={() => onTeamChange("home")}
               className={`rounded-full px-3 py-1.5 font-medium transition-colors ${
                 selectedTeam === "home"
                   ? "bg-accent/15 text-accent-light"
@@ -76,7 +77,7 @@ export function MatchStatsPanel({
             </button>
             <button
               type="button"
-              onClick={() => setSelectedTeam("away")}
+              onClick={() => onTeamChange("away")}
               className={`rounded-full px-3 py-1.5 font-medium transition-colors ${
                 selectedTeam === "away"
                   ? "bg-accent/15 text-accent-light"
