@@ -3,14 +3,15 @@ import { ErrorState } from "@/components/ui/error-state";
 import { apiFetchServer } from "@/lib/api-server";
 import { HistoryCloseButton } from "./components/history-close-button";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 async function fetchByePlanner(): Promise<ByePlannerResponse | null> {
   try {
     return await apiFetchServer<ByePlannerResponse>("/api/teams/byes", {
-      next: { revalidate },
+      cache: "no-store",
     });
-  } catch {
+  } catch (error) {
+    console.error("[byes] Failed to load bye planner", error);
     return null;
   }
 }

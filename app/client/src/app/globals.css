@@ -95,11 +95,10 @@ body {
 :root[data-theme="light"] .hero-overlay-bottom {
   background: linear-gradient(
     0deg,
-    rgba(46, 38, 62, 0.8) 0%,
-    rgba(46, 38, 62, 0.32) 52%,
-    rgba(11, 8, 20, 0) 100%
+    #f6f5f2 0%,
+    rgba(246, 245, 242, 0.5) 3%,
+    rgba(246, 245, 242, 0) 10%
   );
-  mix-blend-mode: multiply;
 }
 
 /* Scrollbar styling — scoped so .scrollbar-none can override */
@@ -166,4 +165,15 @@ body {
 
 :root[data-theme="light"] .brand-nav-shell .brand-nav-watch-active {
   border-color: rgba(167, 139, 250, 0.62);
+}
+
+/* Homepage footer: borderless in dark (blends with hero), bordered in light. */
+.home-footer {
+  border: none;
+  background: transparent;
+}
+
+:root[data-theme="light"] .home-footer {
+  border: none;
+  background: transparent;
 }

@@ -55,76 +55,44 @@ function CompactFooter() {
 
 function FullFooter() {
   return (
-    <footer className="border-t border-border/80 bg-surface/60">
+    <footer className="home-footer">
       <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
-          <div className="text-center sm:col-span-2 lg:col-span-1 lg:text-left">
-            <Link href="/" className="text-lg font-bold text-accent-light">
-              Footy Break Evens
-            </Link>
-            <p className="mt-2 text-sm text-muted">
-              Not associated with, endorsed by, or affiliated with NRL, NRL
-              Fantasy, or the National Rugby League.
-            </p>
-          </div>
+        {/* Brand */}
+        <div className="mb-6 sm:mb-8">
+          <Link href="/" className="text-lg font-bold text-accent-light">
+            Footy Break Evens
+          </Link>
+          <p className="mt-1.5 max-w-sm text-xs text-muted/60 sm:text-sm">
+            Not associated with, endorsed by, or affiliated with NRL, NRL
+            Fantasy, or the National Rugby League.
+          </p>
+        </div>
 
-          {/* Explore */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted/70">
-              Explore
-            </h3>
-            <ul className="mt-3 space-y-2">
-              {EXPLORE_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted transition-colors hover:text-accent-light"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Tools */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted/70">
-              Tools
-            </h3>
-            <ul className="mt-3 space-y-2">
-              {TOOLS_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted transition-colors hover:text-accent-light"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted/70">
-              Legal
-            </h3>
-            <ul className="mt-3 space-y-2">
-              {LEGAL_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted transition-colors hover:text-accent-light"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Link columns — always 3-across, even on mobile */}
+        <div className="grid grid-cols-3 gap-4 sm:gap-8">
+          {[
+            { title: "Explore", links: EXPLORE_LINKS },
+            { title: "Tools", links: TOOLS_LINKS },
+            { title: "Legal", links: LEGAL_LINKS },
+          ].map((group) => (
+            <div key={group.title}>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted/60">
+                {group.title}
+              </h3>
+              <ul className="mt-2 space-y-1.5 sm:mt-3 sm:space-y-2">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-xs text-muted transition-colors hover:text-accent-light sm:text-sm"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Bottom bar */}
