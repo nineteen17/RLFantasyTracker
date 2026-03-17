@@ -12,6 +12,7 @@ import { POSITION_FULL_LABELS } from "@/lib/constants";
 import { parseEntityId, playerPath, teamPath } from "@/lib/entity-routes";
 import { ServerApiError, apiFetchServer } from "@/lib/api-server";
 import { serializeJsonLd } from "@/lib/json-ld";
+import type { PlayerInjuryUpdate } from "./injury-update";
 import PlayerPageClient from "./player-page-client";
 
 type PlayerPageSearchParams = Record<string, string | string[] | undefined>;
@@ -22,6 +23,23 @@ type VenuesResponse = {
     name: string;
     shortName: string | null;
   }>;
+};
+
+type CasualtyWardEntry = {
+  competitionId: number;
+  playerUrl: string;
+  firstName: string;
+  lastName: string;
+  teamNickname: string;
+  injury: string;
+  expectedReturn: string;
+  imageUrl: string | null;
+  sourceUpdatedAt: string;
+  updatedAt: string | null;
+};
+
+type CasualtyWardResponse = {
+  data: CasualtyWardEntry[];
 };
 
 export const revalidate = 300;
@@ -64,6 +82,58 @@ function resolveSiteOrigin(): string {
 
 function toAbsoluteUrl(path: string): string {
   return new URL(path, resolveSiteOrigin()).toString();
+}
+
+function normalizeLookupValue(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function resolveInjuryUpdate(
+  fullName: string,
+  squadName: string,
+  squadShortName: string | null,
+  casualties: CasualtyWardEntry[] | undefined,
+  status: string | null,
+): PlayerInjuryUpdate | null {
+  const normalizedName = normalizeLookupValue(fullName);
+  if (!normalizedName) return status === "injured" ? { injury: "Injured", expectedReturn: null } : null;
+
+  const matches = (casualties ?? []).filter((entry) => {
+    const entryName = normalizeLookupValue(`${entry.firstName} ${entry.lastName}`);
+    return entryName === normalizedName;
+  });
+
+  const teamKeyCandidates = [squadShortName ?? "", squadName]
+    .map((value) => normalizeLookupValue(value))
+    .filter(Boolean);
+  const match =
+    matches.length <= 1
+      ? matches[0]
+      : matches.find((entry) => {
+          const teamKey = normalizeLookupValue(entry.teamNickname);
+          return teamKeyCandidates.some(
+            (candidate) =>
+              teamKey === candidate ||
+              teamKey.includes(candidate) ||
+              candidate.includes(teamKey),
+          );
+        }) ?? matches[0];
+
+  if (match) {
+    const injury = match.injury?.trim() || "Injured";
+    const expectedReturn = match.expectedReturn?.trim() || null;
+    return { injury, expectedReturn };
+  }
+
+  if (status === "injured") {
+    return { injury: "Injured", expectedReturn: null };
+  }
+
+  return null;
 }
 
 function toPropertyValue(
@@ -132,7 +202,7 @@ export default async function PlayerPage({
 
   const includePreseason = parseIncludePreseason(query.preseason);
 
-  const [playerResult, historyResult, teamsResult, venuesResult] =
+  const [playerResult, historyResult, teamsResult, venuesResult, casualtyResult] =
     await Promise.allSettled([
       fetchPlayerDetail(playerId),
       apiFetchServer<PlayerHistoryResponse>(
@@ -144,6 +214,9 @@ export default async function PlayerPage({
       }),
       apiFetchServer<VenuesResponse>("/api/venues", {
         next: { revalidate },
+      }),
+      apiFetchServer<CasualtyWardResponse>("/api/casualty-ward?competition=111", {
+        next: { revalidate: 900 },
       }),
     ]);
 
@@ -164,8 +237,17 @@ export default async function PlayerPage({
     teamsResult.status === "fulfilled" ? teamsResult.value : undefined;
   const initialVenuesData =
     venuesResult.status === "fulfilled" ? venuesResult.value : undefined;
+  const casualties =
+    casualtyResult.status === "fulfilled" ? casualtyResult.value.data : undefined;
 
   const player = initialPlayerData.player;
+  const injuryUpdate = resolveInjuryUpdate(
+    player.fullName,
+    player.squad.name,
+    player.squad.shortName,
+    casualties,
+    player.status,
+  );
   const canonicalPlayerPath = playerPath(player.playerId, player.fullName);
   const incomingPath = `/players/${player_id}`;
   if (incomingPath !== canonicalPlayerPath) {
@@ -241,6 +323,7 @@ export default async function PlayerPage({
           initialHistoryIncludePreseason={includePreseason}
           initialTeamsData={initialTeamsData}
           initialVenuesData={initialVenuesData}
+          initialInjuryUpdate={injuryUpdate}
         />
       </Suspense>
     </>

@@ -4,6 +4,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { apiFetchServer } from "@/lib/api-server";
 import { playerPath } from "@/lib/entity-routes";
 import { playerImageUrl } from "@/lib/player-image";
+import { InjuryWardFilters } from "./injury-ward-filters";
 
 type InjuryWardSearchParams = Record<string, string | string[] | undefined>;
 
@@ -287,60 +288,13 @@ export default async function InjuryWardPage({
         </div>
       </div>
 
-      <form
-        method="get"
-        className="grid gap-3 rounded-lg border border-border bg-surface p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-4"
-      >
-        <input type="hidden" name="competition" value={competitionId} />
-        <label className="space-y-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Team</span>
-          <select
-            name="team"
-            defaultValue={selectedTeam}
-            className="w-full rounded-md border border-border bg-bg px-2.5 py-2 text-sm"
-          >
-            <option value="">Any team</option>
-            {teamOptions.map((team) => (
-              <option key={team} value={team}>
-                {team}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="space-y-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Expected Return
-          </span>
-          <select
-            name="expectedReturn"
-            defaultValue={selectedExpectedReturn}
-            className="w-full rounded-md border border-border bg-bg px-2.5 py-2 text-sm"
-          >
-            <option value="">Any return window</option>
-            {expectedReturnOptions.map((expectedReturn) => (
-              <option key={expectedReturn} value={expectedReturn}>
-                {expectedReturn}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-2">
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-md bg-accent px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-accent-light"
-          >
-            Apply Filters
-          </button>
-          <Link
-            href={`/nrl-injury-ward?competition=${competitionId}`}
-            className="inline-flex items-center justify-center rounded-md border border-border px-3.5 py-2 text-sm text-muted transition hover:text-foreground"
-          >
-            Reset
-          </Link>
-        </div>
-      </form>
+      <InjuryWardFilters
+        competitionId={competitionId}
+        selectedTeam={selectedTeam}
+        selectedExpectedReturn={selectedExpectedReturn}
+        teamOptions={teamOptions}
+        expectedReturnOptions={expectedReturnOptions}
+      />
 
       {filtered.length === 0 ? (
         <div className="rounded-lg border border-border bg-surface p-4 text-sm text-muted">

@@ -32,6 +32,7 @@ import { PlayedWithCard } from "./components/played-with-card";
 import { isTeamRoutePath } from "@/lib/entity-routes";
 import { formatNumber } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
+import type { PlayerInjuryUpdate } from "./injury-update";
 
 const TABS = [
   { key: "overview", label: "Overview" },
@@ -175,6 +176,7 @@ interface PlayerPageClientProps {
   initialHistoryIncludePreseason: boolean;
   initialTeamsData?: TeamsListResponse;
   initialVenuesData?: VenuesResponse;
+  initialInjuryUpdate?: PlayerInjuryUpdate | null;
 }
 
 export default function PlayerPageClient({
@@ -184,6 +186,7 @@ export default function PlayerPageClient({
   initialHistoryIncludePreseason,
   initialTeamsData,
   initialVenuesData,
+  initialInjuryUpdate = null,
 }: PlayerPageClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -385,7 +388,11 @@ export default function PlayerPageClient({
         <span>&larr;</span>
         <span>{backLabel}</span>
       </Link>
-      <PlayerHeader player={player} avgPoints={current?.avgPoints ?? null} />
+      <PlayerHeader
+        player={player}
+        avgPoints={current?.avgPoints ?? null}
+        injuryUpdate={initialInjuryUpdate}
+      />
 
       {current && (
         <>

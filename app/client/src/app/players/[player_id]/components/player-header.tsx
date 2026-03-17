@@ -9,13 +9,19 @@ import { useWatchlistPlayers } from "@/hooks/use-player-storage";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
 import { teamPath } from "@/lib/entity-routes";
 import { formatPrice } from "@/lib/utils";
+import type { PlayerInjuryUpdate } from "../injury-update";
 
 interface PlayerHeaderProps {
   player: PlayerInfo;
   avgPoints: string | null;
+  injuryUpdate?: PlayerInjuryUpdate | null;
 }
 
-export function PlayerHeader({ player, avgPoints }: PlayerHeaderProps) {
+export function PlayerHeader({
+  player,
+  avgPoints,
+  injuryUpdate = null,
+}: PlayerHeaderProps) {
   const { playerIds: watchlistIds, togglePlayer } = useWatchlistPlayers();
   const isWatchlisted = watchlistIds.has(player.playerId);
 
@@ -110,6 +116,16 @@ export function PlayerHeader({ player, avgPoints }: PlayerHeaderProps) {
           </span>
         )}
       </div>
+
+      {injuryUpdate && (
+        <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3">
+          <p className="text-sm font-semibold text-warning">Injury Update</p>
+          <p className="mt-1 text-sm text-foreground">{injuryUpdate.injury}</p>
+          <p className="mt-1 text-xs text-muted">
+            Expected return: {injuryUpdate.expectedReturn ?? "TBC"}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
