@@ -4,9 +4,22 @@ import { fetchUpstream } from "./upstream/client";
 import type { UpstreamRound, UpstreamMatch } from "./upstream/types";
 import { runFullSync, runLightSync } from "./syncService";
 import { runOfficialHistoryIncrementalSync } from "./history/official-history.incremental";
+import { syncTeamListsForRound } from "./syncers/team-lists.syncer";
+import { deriveSeason } from "./utils/mappers";
 
 const POLL_INTERVAL_ACTIVE = 5 * 60 * 1000; // 5 minutes during active round
 const POLL_INTERVAL_IDLE = 30 * 60 * 1000; // 30 minutes when no active round
+const UPCOMING_MATCH_POLL_WINDOW_MINUTES = Number.parseInt(
+	process.env.TEAM_LIST_SYNC_LOOKAHEAD_MINUTES ?? "120",
+	10,
+);
+const TEAM_LIST_WINDOW_TOLERANCE_MINUTES = Number.parseInt(
+	process.env.TEAM_LIST_SYNC_WINDOW_TOLERANCE_MINUTES ?? "4",
+	10,
+);
+const TEAM_LIST_WINDOW_MEMORY_MS = 24 * 60 * 60 * 1000;
+const TEAM_LIST_REFRESH_WINDOWS_MINUTES = [90, 60, 30, 10, -5] as const;
+
 const ENABLE_HISTORY_SYNC =
 	process.env.ENABLE_HISTORY_SYNC === undefined
 		? true
@@ -16,6 +29,15 @@ const HISTORY_SYNC_LOOKBACK_ROUNDS = Number.parseInt(
 	10,
 );
 
+const TEAM_LIST_BASELINE_SYNC_ENABLED =
+	process.env.TEAM_LIST_BASELINE_SYNC_ENABLED === undefined
+		? true
+		: process.env.TEAM_LIST_BASELINE_SYNC_ENABLED === "true";
+const TEAM_LIST_BASELINE_SYNC_CRON =
+	process.env.TEAM_LIST_BASELINE_SYNC_CRON ?? "5 18 * * 2";
+const TEAM_LIST_BASELINE_SYNC_TIMEZONE =
+	process.env.TEAM_LIST_BASELINE_SYNC_TIMEZONE ?? "Australia/Sydney";
+
 /** In-memory match status tracker to detect transitions */
 let previousStatuses = new Map<number, string>();
 let previousRoundId: number | null = null;
@@ -23,11 +45,150 @@ let lastHandledRoundCompletionId: number | null = null;
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let syncing = false;
 let historySyncing = false;
+const handledTeamListWindows = new Map<string, number>();
+
+function resolveTeamListTargetRound(rounds: UpstreamRound[]): UpstreamRound | null {
+	const active = rounds.find((round) => round.status === "active");
+	if (active) return active;
+
+	const scheduled = rounds
+		.filter((round) => round.status === "scheduled")
+		.sort(
+			(a, b) =>
+				new Date(a.start).getTime() - new Date(b.start).getTime(),
+		);
+	if (scheduled.length > 0) return scheduled[0];
+
+	return null;
+}
+
+function clearStaleTeamListWindows(nowMs: number): void {
+	for (const [key, at] of handledTeamListWindows.entries()) {
+		if (nowMs - at > TEAM_LIST_WINDOW_MEMORY_MS) {
+			handledTeamListWindows.delete(key);
+		}
+	}
+}
+
+function registerTeamListWindow(
+	fixtureId: number,
+	windowMinutes: number,
+	nowMs: number,
+): boolean {
+	const key = `${fixtureId}:${windowMinutes}`;
+	if (handledTeamListWindows.has(key)) {
+		return false;
+	}
+	handledTeamListWindows.set(key, nowMs);
+	return true;
+}
+
+function hasUpcomingKickoffWithinWindow(rounds: UpstreamRound[]): boolean {
+	const now = Date.now();
+	const lookahead = Math.max(UPCOMING_MATCH_POLL_WINDOW_MINUTES, 30) * 60 * 1000;
+
+	for (const round of rounds) {
+		if (round.status !== "active" && round.status !== "scheduled") continue;
+		for (const match of round.matches) {
+			if (match.status === "complete") continue;
+			const kickoffMs = new Date(match.date).getTime();
+			if (!Number.isFinite(kickoffMs)) continue;
+			const diff = kickoffMs - now;
+			if (diff >= 0 && diff <= lookahead) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+async function runBaselineTeamListSync(): Promise<void> {
+	const rounds = await fetchUpstream<UpstreamRound[]>("rounds");
+	const target = resolveTeamListTargetRound(rounds);
+	if (!target) {
+		logger.warn(
+			"[Scheduler] Team-list baseline sync skipped — no active/scheduled round",
+		);
+		return;
+	}
+
+	await syncTeamListsForRound({
+		roundId: target.id,
+		season: deriveSeason(target.start),
+	});
+}
+
+async function runDueKickoffWindowTeamListSyncs(
+	rounds: UpstreamRound[],
+): Promise<void> {
+	const nowMs = Date.now();
+	clearStaleTeamListWindows(nowMs);
+
+	const grouped = new Map<string, { roundId: number; season: number; fixtureIds: number[]; labels: string[] }>();
+
+	for (const round of rounds) {
+		if (round.status !== "active" && round.status !== "scheduled") continue;
+		const season = deriveSeason(round.start);
+
+		for (const match of round.matches) {
+			if (match.status === "complete") continue;
+			const kickoffMs = new Date(match.date).getTime();
+			if (!Number.isFinite(kickoffMs)) continue;
+			const minutesToKickoff = Math.round((kickoffMs - nowMs) / 60000);
+
+			for (const windowMinutes of TEAM_LIST_REFRESH_WINDOWS_MINUTES) {
+				if (
+					Math.abs(minutesToKickoff - windowMinutes) >
+					TEAM_LIST_WINDOW_TOLERANCE_MINUTES
+				) {
+					continue;
+				}
+				if (!registerTeamListWindow(match.id, windowMinutes, nowMs)) {
+					continue;
+				}
+
+				const key = `${round.id}:${season}`;
+				const existing = grouped.get(key);
+				const label = `fixture ${match.id} @ T${windowMinutes >= 0 ? "-" : "+"}${Math.abs(windowMinutes)}m`;
+				if (existing) {
+					if (!existing.fixtureIds.includes(match.id)) {
+						existing.fixtureIds.push(match.id);
+					}
+					existing.labels.push(label);
+				} else {
+					grouped.set(key, {
+						roundId: round.id,
+						season,
+						fixtureIds: [match.id],
+						labels: [label],
+					});
+				}
+			}
+		}
+	}
+
+	for (const group of grouped.values()) {
+		logger.info(
+			`[Scheduler] Team-list targeted sync due (${group.labels.join(", ")})`,
+		);
+		await safeSyncRun(
+			`team-lists-kickoff-window-r${group.roundId}`,
+			() =>
+				syncTeamListsForRound({
+					roundId: group.roundId,
+					season: group.season,
+					targetFixtureIds: group.fixtureIds,
+				}),
+		);
+	}
+}
 
 /**
  * Start the sync scheduler:
  * 1. Daily cron at 4:00 AM AEST (18:00 UTC previous day)
- * 2. Match-aware poller
+ * 2. Weekly team-list baseline cron (Tuesday 6:05 PM)
+ * 3. Match-aware poller
  */
 export function startScheduler(): void {
 	logger.info("[Scheduler] Starting sync scheduler");
@@ -54,6 +215,24 @@ export function startScheduler(): void {
 
 	logger.info("[Scheduler] Daily cron scheduled (4:00 AM AEST)");
 
+	if (TEAM_LIST_BASELINE_SYNC_ENABLED) {
+		cron.schedule(
+			TEAM_LIST_BASELINE_SYNC_CRON,
+			async () => {
+				logger.info(
+					"[Scheduler] Weekly team-list baseline cron triggered",
+				);
+				await safeSyncRun("team-lists-baseline", async () => {
+					await runBaselineTeamListSync();
+				});
+			},
+			{ timezone: TEAM_LIST_BASELINE_SYNC_TIMEZONE },
+		);
+		logger.info(
+			`[Scheduler] Team-list baseline cron scheduled (${TEAM_LIST_BASELINE_SYNC_CRON} ${TEAM_LIST_BASELINE_SYNC_TIMEZONE})`,
+		);
+	}
+
 	// Start the match-aware poller
 	poll();
 }
@@ -65,6 +244,8 @@ export function startScheduler(): void {
 async function poll(): Promise<void> {
 	try {
 		const rounds = await fetchUpstream<UpstreamRound[]>("rounds");
+		await runDueKickoffWindowTeamListSyncs(rounds);
+
 		const activeRound = rounds.find((r) => r.status === "active");
 
 		if (!activeRound) {
@@ -117,12 +298,16 @@ async function poll(): Promise<void> {
 			} else {
 				previousRoundId = null;
 				logger.info(
-					"[Scheduler] No active round — polling again in 30 minutes",
+					"[Scheduler] No active round — waiting for next poll",
 				);
 			}
 
 			previousStatuses.clear();
-			scheduleNextPoll(POLL_INTERVAL_IDLE);
+			scheduleNextPoll(
+				hasUpcomingKickoffWithinWindow(rounds)
+					? POLL_INTERVAL_ACTIVE
+					: POLL_INTERVAL_IDLE,
+			);
 			return;
 		}
 

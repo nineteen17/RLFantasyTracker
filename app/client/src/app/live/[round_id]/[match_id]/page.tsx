@@ -27,7 +27,9 @@ export default function MatchDetailPage({
   const selectedTeam = searchParams.get("team") === "away" ? "away" : "home";
 
   const [tz] = useTimezone();
-  const { data: roundData, isLoading, error } = useLiveRound(roundId);
+  const { data: roundData, isLoading, error } = useLiveRound(roundId, {
+    includeTeamLists: true,
+  });
   const isLive = roundData?.status === "active";
   const { data: statsData, isLoading: statsLoading } = useLiveRoundStats(
     roundId,
@@ -64,6 +66,7 @@ export default function MatchDetailPage({
 
   const isPlaying = match.status === "playing";
   const isComplete = match.status === "complete";
+  const isPreGame = !isPlaying && !isComplete;
   const homeWon = isComplete && match.homeScore > match.awayScore;
   const awayWon = isComplete && match.awayScore > match.homeScore;
 
@@ -197,18 +200,363 @@ export default function MatchDetailPage({
       </div>
 
       {/* Player stats */}
+      {isPreGame && (
+        <div className="rounded-lg border border-border bg-surface">
+          <TeamLineupsSection match={match} viewerTimeZone={tz} />
+        </div>
+      )}
+
       <div className="rounded-lg border border-border bg-surface">
         <MatchStatsPanel
           homeSquadName={match.homeSquadName}
           awaySquadName={match.awaySquadName}
           homePlayers={homePlayers}
           awayPlayers={awayPlayers}
+          matchStatus={match.status}
           selectedTeam={selectedTeam}
           onTeamChange={handleTeamChange}
           returnTo={`/live/${roundId}/${matchId}`}
           isLoading={statsLoading}
         />
       </div>
+    </div>
+  );
+}
+
+type TeamListPlayer = NonNullable<
+  NonNullable<LiveMatch["teamList"]>["homePlayers"]
+>[number];
+
+const TEAM_LIST_RELEASE_TIMEZONE = "Pacific/Auckland";
+
+function getZonedNowParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(date);
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  return {
+    weekday: weekdayMap[byType.weekday] ?? 0,
+    year: Number(byType.year),
+    month: Number(byType.month),
+    day: Number(byType.day),
+    hour: Number(byType.hour),
+    minute: Number(byType.minute),
+    second: Number(byType.second),
+  };
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date);
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const asUtc = Date.UTC(
+    Number(byType.year),
+    Number(byType.month) - 1,
+    Number(byType.day),
+    Number(byType.hour),
+    Number(byType.minute),
+    Number(byType.second),
+  );
+  return asUtc - date.getTime();
+}
+
+function zonedLocalToUtcDate(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string,
+) {
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0);
+  const firstOffset = getTimeZoneOffsetMs(new Date(utcGuess), timeZone);
+  let utcTs = utcGuess - firstOffset;
+  const secondOffset = getTimeZoneOffsetMs(new Date(utcTs), timeZone);
+  if (secondOffset !== firstOffset) {
+    utcTs = utcGuess - secondOffset;
+  }
+  return new Date(utcTs);
+}
+
+function getNextTeamListUpdate(now: Date) {
+  const zoned = getZonedNowParts(now, TEAM_LIST_RELEASE_TIMEZONE);
+  let daysAhead = (2 - zoned.weekday + 7) % 7; // Tuesday = 2
+  const isPastTodayCutoff =
+    zoned.hour > 18 || (zoned.hour === 18 && zoned.minute >= 5);
+  if (daysAhead === 0 && isPastTodayCutoff) {
+    daysAhead = 7;
+  }
+
+  const targetLocalDate = new Date(Date.UTC(zoned.year, zoned.month - 1, zoned.day));
+  targetLocalDate.setUTCDate(targetLocalDate.getUTCDate() + daysAhead);
+
+  return zonedLocalToUtcDate(
+    targetLocalDate.getUTCFullYear(),
+    targetLocalDate.getUTCMonth() + 1,
+    targetLocalDate.getUTCDate(),
+    18,
+    5,
+    TEAM_LIST_RELEASE_TIMEZONE,
+  );
+}
+
+function formatTeamListMoment(date: Date, timeZone: string, locale = "en-NZ") {
+  return new Intl.DateTimeFormat(locale, {
+    timeZone,
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  }).format(date);
+}
+
+function TeamListExpectedTimer({ viewerTimeZone }: { viewerTimeZone: string }) {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const startId = window.setTimeout(tick, 0);
+    const intervalId = window.setInterval(tick, 60_000);
+    return () => {
+      window.clearTimeout(startId);
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  if (now == null) {
+    return (
+      <div className="rounded-lg border border-border/70 bg-surface-alt/30 p-4">
+        <p className="text-sm font-semibold text-foreground">Named team lists not available yet</p>
+        <p className="mt-1 text-sm text-muted">
+          We publish them as soon as NRL updates are available.
+        </p>
+      </div>
+    );
+  }
+
+  const target = getNextTeamListUpdate(new Date(now));
+  const diff = target.getTime() - now;
+  const expectedAt = formatTeamListMoment(target, viewerTimeZone);
+
+  if (diff <= 0) {
+    return (
+      <div className="rounded-lg border border-border/70 bg-surface-alt/30 p-4">
+        <p className="text-sm font-semibold text-foreground">Named team lists not available yet</p>
+        <p className="mt-1 text-sm text-muted">
+          Expected around {expectedAt}. We keep checking for late changes.
+        </p>
+      </div>
+    );
+  }
+
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  const mins = Math.floor((diff % 3_600_000) / 60_000);
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${mins}m`);
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-surface-alt/30 p-4">
+      <p className="text-sm font-semibold text-foreground">Named team lists not available yet</p>
+      <p className="mt-1 text-sm text-muted">
+        Next expected update in{" "}
+        <span className="font-semibold text-foreground">{parts.join(" ")}</span>
+        .
+      </p>
+      <p className="mt-1 text-xs text-muted/90">Expected at {expectedAt}</p>
+    </div>
+  );
+}
+
+function toPlayerNumberMap(players: TeamListPlayer[]) {
+  return new Map(
+    players
+      .filter((player) => player.number !== null)
+      .map((player) => [player.number as number, player]),
+  );
+}
+
+function getNameParts(player: TeamListPlayer) {
+  const first = player.firstName?.trim() || "";
+  const last = player.lastName?.trim() || "";
+  if (first || last) return { first, last };
+  const parts = player.displayName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { first: "—", last: "" };
+  if (parts.length === 1) return { first: parts[0], last: "" };
+  return { first: parts[0], last: parts.slice(1).join(" ") };
+}
+
+function PlayerNameStack({
+  player,
+  align,
+}: {
+  player: TeamListPlayer | undefined;
+  align: "left" | "right";
+}) {
+  if (!player) {
+    return (
+      <div className={`text-xs text-muted/50 ${align === "right" ? "text-right" : "text-left"}`}>
+        —
+      </div>
+    );
+  }
+
+  const parts = getNameParts(player);
+  const firstName = parts.first || "—";
+  const lastName = parts.last;
+  return (
+    <div className={align === "right" ? "text-right" : "text-left"}>
+      <div className="inline-flex max-w-full items-center gap-1 whitespace-nowrap overflow-hidden text-[11px] font-medium leading-tight md:text-xs [@media(min-width:1440px)]:text-base">
+        <span className="text-muted/80">{firstName}</span>
+        {lastName ? (
+          <span className="font-semibold text-foreground">{lastName}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function LineupNumberRow({
+  number,
+  homePlayer,
+  awayPlayer,
+}: {
+  number: number;
+  homePlayer: TeamListPlayer | undefined;
+  awayPlayer: TeamListPlayer | undefined;
+}) {
+  return (
+    <li className="grid grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-center gap-1.5 py-0.5 md:grid-cols-[minmax(0,1fr)_2.3rem_minmax(0,1fr)] [@media(min-width:1440px)]:grid-cols-[minmax(0,1fr)_3.2rem_minmax(0,1fr)]">
+      <PlayerNameStack player={homePlayer} align="left" />
+      <div className="text-center">
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border text-[10px] font-semibold text-accent-light md:h-6 md:w-6 md:text-[11px] [@media(min-width:1440px)]:h-8 [@media(min-width:1440px)]:w-8 [@media(min-width:1440px)]:text-sm">
+          {number}
+        </span>
+      </div>
+      <PlayerNameStack player={awayPlayer} align="right" />
+    </li>
+  );
+}
+
+function LineupSection({
+  title,
+  numbers,
+  homeByNumber,
+  awayByNumber,
+}: {
+  title: string;
+  numbers: number[];
+  homeByNumber: Map<number, TeamListPlayer>;
+  awayByNumber: Map<number, TeamListPlayer>;
+}) {
+  if (numbers.length === 0) return null;
+
+  return (
+    <div className="space-y-0.5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 py-0.5">
+        <div className="h-px bg-border/35" />
+        <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted md:text-xs [@media(min-width:1440px)]:text-base">{title}</h3>
+        <div className="h-px bg-border/35" />
+      </div>
+      <ul className="divide-y divide-border/35">
+        {numbers.map((number) => (
+          <LineupNumberRow
+            key={number}
+            number={number}
+            homePlayer={homeByNumber.get(number)}
+            awayPlayer={awayByNumber.get(number)}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TeamLineupsSection({
+  match,
+  viewerTimeZone,
+}: {
+  match: LiveMatch;
+  viewerTimeZone: string;
+}) {
+  const homePlayers = match.teamList?.homePlayers ?? [];
+  const awayPlayers = match.teamList?.awayPlayers ?? [];
+  const hasAny = homePlayers.length > 0 || awayPlayers.length > 0;
+  const homeByNumber = toPlayerNumberMap(homePlayers);
+  const awayByNumber = toPlayerNumberMap(awayPlayers);
+
+  const reserveNumbers = Array.from(
+    new Set(
+      [...homeByNumber.keys(), ...awayByNumber.keys()]
+        .filter((number) => number >= 18)
+        .sort((a, b) => a - b),
+    ),
+  );
+  const sections = [
+    { title: "Backs", numbers: [1, 2, 3, 4, 5, 6, 7] },
+    { title: "Forwards", numbers: [8, 9, 10, 11, 12, 13] },
+    { title: "Interchange", numbers: [14, 15, 16, 17] },
+    { title: "Reserves", numbers: reserveNumbers },
+  ];
+
+  return (
+    <div className="space-y-2 p-3 md:p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold md:text-lg [@media(min-width:1440px)]:text-xl">Named Team Lists</h2>
+        {match.teamList?.sourceUpdatedAt ? (
+          <span className="text-xs text-muted [@media(min-width:1440px)]:text-sm">
+            Updated {new Date(match.teamList.sourceUpdatedAt).toLocaleString()}
+          </span>
+        ) : null}
+      </div>
+
+      {hasAny ? (
+        <div className="space-y-1.5">
+          {sections.map((section) => (
+            <LineupSection
+              key={section.title}
+              title={section.title}
+              numbers={section.numbers}
+              homeByNumber={homeByNumber}
+              awayByNumber={awayByNumber}
+            />
+          ))}
+        </div>
+      ) : (
+        <TeamListExpectedTimer viewerTimeZone={viewerTimeZone} />
+      )}
     </div>
   );
 }

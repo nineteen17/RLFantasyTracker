@@ -8,13 +8,15 @@ import type {
 } from "@src/worker/upstream/types";
 import { inArray } from "drizzle-orm";
 import db from "@database/data-source";
-import { players } from "@database/schema";
+import { fixtureTeamLists, players } from "@database/schema";
 import { calculateFantasyPoints } from "@src/logic/shared/constants/scoring";
 import type {
 	LiveRoundResponse,
+	LiveRoundTeamListsResponse,
 	LiveRoundsListResponse,
 	LiveStatsResponse,
 	PlayerMatchRawStats,
+	LiveTeamListPlayer,
 } from "@nrl/types";
 
 /**
@@ -46,10 +48,42 @@ export async function fetchLiveRounds(): Promise<LiveRoundsListResponse> {
  */
 export async function fetchLiveRound(
 	roundId: number,
+	includeTeamLists = false,
 ): Promise<LiveRoundResponse | null> {
 	const rounds = await fetchUpstream<UpstreamRound[]>("rounds");
 	const round = rounds.find((r) => r.id === roundId);
-	return round ? mapRound(round) : null;
+	if (!round) return null;
+
+	const teamLists = includeTeamLists ? await fetchRoundTeamListMap(roundId) : null;
+	return mapRound(round, teamLists);
+}
+
+export async function fetchRoundTeamLists(
+	roundId: number,
+): Promise<LiveRoundTeamListsResponse> {
+	const rows = await db
+		.select({
+			fixtureId: fixtureTeamLists.fixtureId,
+			homeSquadId: fixtureTeamLists.homeSquadId,
+			awaySquadId: fixtureTeamLists.awaySquadId,
+			homePlayers: fixtureTeamLists.homePlayers,
+			awayPlayers: fixtureTeamLists.awayPlayers,
+			sourceUpdatedAt: fixtureTeamLists.sourceUpdatedAt,
+		})
+		.from(fixtureTeamLists)
+		.where(inArray(fixtureTeamLists.roundId, [roundId]));
+
+	return {
+		roundId,
+		matches: rows.map((row) => ({
+			fixtureId: row.fixtureId,
+			homeSquadId: row.homeSquadId,
+			awaySquadId: row.awaySquadId,
+			homePlayers: normalizeTeamListPlayers(row.homePlayers),
+			awayPlayers: normalizeTeamListPlayers(row.awayPlayers),
+			sourceUpdatedAt: row.sourceUpdatedAt ? row.sourceUpdatedAt.toISOString() : null,
+		})),
+	};
 }
 
 /**
@@ -135,7 +169,75 @@ export async function fetchPlayerRoundStats(
 	return results.sort((a, b) => a.roundId - b.roundId);
 }
 
-function mapRound(r: UpstreamRound): LiveRoundResponse {
+function normalizeTeamListPlayers(raw: unknown): LiveTeamListPlayer[] {
+	if (!Array.isArray(raw)) return [];
+
+	return raw
+		.map((item) => {
+			if (!item || typeof item !== "object") return null;
+			const asRecord = item as Record<string, unknown>;
+			const firstName = String(asRecord.firstName ?? "").trim();
+			const lastName = String(asRecord.lastName ?? "").trim();
+			const displayNameRaw = String(asRecord.displayName ?? "").trim();
+			return {
+				playerId:
+					typeof asRecord.playerId === "number" ? asRecord.playerId : null,
+				firstName,
+				lastName,
+				displayName:
+					displayNameRaw.length > 0
+						? displayNameRaw
+						: `${firstName} ${lastName}`.trim() || "Unnamed Player",
+				number: typeof asRecord.number === "number" ? asRecord.number : null,
+				position:
+					typeof asRecord.position === "string"
+						? asRecord.position
+						: null,
+				isOnField:
+					typeof asRecord.isOnField === "boolean"
+						? asRecord.isOnField
+						: null,
+			} satisfies LiveTeamListPlayer;
+		})
+		.filter((value): value is LiveTeamListPlayer => value !== null);
+}
+
+async function fetchRoundTeamListMap(roundId: number) {
+	const rows = await db
+		.select({
+			fixtureId: fixtureTeamLists.fixtureId,
+			homePlayers: fixtureTeamLists.homePlayers,
+			awayPlayers: fixtureTeamLists.awayPlayers,
+			sourceUpdatedAt: fixtureTeamLists.sourceUpdatedAt,
+		})
+		.from(fixtureTeamLists)
+		.where(inArray(fixtureTeamLists.roundId, [roundId]));
+
+	return new Map(
+		rows.map((row) => [
+			row.fixtureId,
+			{
+				homePlayers: normalizeTeamListPlayers(row.homePlayers),
+				awayPlayers: normalizeTeamListPlayers(row.awayPlayers),
+				sourceUpdatedAt: row.sourceUpdatedAt
+					? row.sourceUpdatedAt.toISOString()
+					: null,
+			},
+		]),
+	);
+}
+
+function mapRound(
+	r: UpstreamRound,
+	teamLists?: Map<
+		number,
+		{
+			homePlayers: LiveTeamListPlayer[];
+			awayPlayers: LiveTeamListPlayer[];
+			sourceUpdatedAt: string | null;
+		}
+	> | null,
+): LiveRoundResponse {
 	return {
 		roundId: r.id,
 		status: r.status,
@@ -152,6 +254,7 @@ function mapRound(r: UpstreamRound): LiveRoundResponse {
 			venueName: m.venue_name,
 			date: m.date,
 			clock: m.clock,
+			teamList: teamLists?.get(m.id) ?? null,
 		})),
 	};
 }

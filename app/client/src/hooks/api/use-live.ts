@@ -22,10 +22,18 @@ export function useLiveRounds() {
 }
 
 /** Fetch a specific round's matches */
-export function useLiveRound(roundId: number | null) {
+export function useLiveRound(
+  roundId: number | null,
+  options?: { includeTeamLists?: boolean },
+) {
+  const includeTeamLists = options?.includeTeamLists ?? false;
+
   return useQuery({
-    queryKey: liveKeys.round(roundId ?? 0),
-    queryFn: () => apiFetch<LiveRoundResponse>(`/api/live/round/${roundId}`),
+    queryKey: liveKeys.round(roundId ?? 0, includeTeamLists),
+    queryFn: () =>
+      apiFetch<LiveRoundResponse>(
+        `/api/live/round/${roundId}${includeTeamLists ? "?includeTeamLists=true" : ""}`,
+      ),
     enabled: roundId !== null && roundId > 0,
     placeholderData: keepPreviousData,
     refetchInterval: (query) => {

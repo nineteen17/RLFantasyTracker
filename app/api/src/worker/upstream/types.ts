@@ -152,3 +152,49 @@ export interface UpstreamCasualtyWardResponse {
 	selectedExpectedReturnValue?: string | null;
 	selectedTeamId?: number | null;
 }
+
+export interface UpstreamNrlDrawFixtureTeam {
+	teamId: number;
+	nickName: string;
+	name?: string;
+}
+
+export interface UpstreamNrlDrawFixtureClock {
+	kickOffTimeLong?: string;
+}
+
+export interface UpstreamNrlDrawFixture {
+	type?: string;
+	matchCentreUrl?: string;
+	homeTeam?: UpstreamNrlDrawFixtureTeam;
+	awayTeam?: UpstreamNrlDrawFixtureTeam;
+	clock?: UpstreamNrlDrawFixtureClock;
+}
+
+export interface UpstreamNrlDrawDataResponse {
+	fixtures?: UpstreamNrlDrawFixture[];
+	selectedCompetitionId?: number;
+	selectedSeasonId?: number;
+	selectedRoundId?: number;
+}
+
+export interface UpstreamNrlMatchPlayer {
+	playerId?: number;
+	firstName?: string;
+	lastName?: string;
+	number?: number;
+	position?: string;
+	isOnField?: boolean;
+}
+
+export interface UpstreamNrlMatchTeam {
+	teamId?: number;
+	players?: UpstreamNrlMatchPlayer[];
+}
+
+export interface UpstreamNrlMatchDataResponse {
+	updated?: string;
+	matchId?: string;
+	homeTeam?: UpstreamNrlMatchTeam;
+	awayTeam?: UpstreamNrlMatchTeam;
+}

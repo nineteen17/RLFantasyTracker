@@ -6,6 +6,7 @@ import { syncPlayers } from "./syncers/players.syncer";
 import { syncCoach } from "./syncers/coach.syncer";
 import { deriveMetrics } from "./syncers/derive.syncer";
 import { syncCasualtyWard } from "./syncers/casualty.syncer";
+import { syncTeamListsForRound } from "./syncers/team-lists.syncer";
 import { deriveSeason } from "./utils/mappers";
 import { fetchUpstream } from "./upstream/client";
 import type { UpstreamRound } from "./upstream/types";
@@ -18,6 +19,7 @@ export interface SyncResult {
 	players: number;
 	coach: number;
 	casualties: number;
+	teamLists: number;
 	derived: number;
 	durationMs: number;
 }
@@ -80,6 +82,24 @@ export async function runFullSync(): Promise<SyncResult> {
 	// Phase 2: Rounds + fixtures (depends on squads/venues FKs)
 	const roundsResult = await syncRounds(roundsData);
 
+	// Phase 2b: Team lists for active/scheduled round (best-effort)
+	let teamListsCount = 0;
+	try {
+		const targetRound =
+			roundsData.find((r) => r.status === "active") ??
+			roundsData.find((r) => r.status === "scheduled");
+		if (targetRound) {
+			teamListsCount = await syncTeamListsForRound({
+				roundId: targetRound.id,
+				season: deriveSeason(targetRound.start),
+			});
+		}
+	} catch (error) {
+		logger.warn(
+			`Team-list sync failed during full sync: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
+
 	// Phase 3: Players + playerCurrent (depends on squads FK)
 	const playersCount = await syncPlayers(season);
 
@@ -99,6 +119,7 @@ export async function runFullSync(): Promise<SyncResult> {
 		players: playersCount,
 		coach: coachCount,
 		casualties: casualtiesCount,
+		teamLists: teamListsCount,
 		derived: derivedCount,
 		durationMs,
 	};

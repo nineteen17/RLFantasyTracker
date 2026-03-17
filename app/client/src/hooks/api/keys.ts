@@ -10,7 +10,8 @@ export const venueKeys = {
 
 export const liveKeys = {
   rounds: ["live", "rounds"] as const,
-  round: (roundId: number) => ["live", "round", roundId] as const,
+  round: (roundId: number, includeTeamLists = false) =>
+    ["live", "round", roundId, includeTeamLists ? "with-team-lists" : "basic"] as const,
   roundStats: (roundId: number) => ["live", "stats", roundId] as const,
   playerStats: (playerId: number) => ["live", "player", playerId] as const,
 };

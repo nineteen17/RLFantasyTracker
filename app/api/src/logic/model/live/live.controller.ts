@@ -5,6 +5,7 @@ import {
 	fetchLiveRound,
 	fetchLiveRoundStats,
 	fetchPlayerRoundStats,
+	fetchRoundTeamLists,
 } from "./live.repository";
 
 export async function getLiveRounds(_req: Request, res: Response) {
@@ -14,13 +15,21 @@ export async function getLiveRounds(_req: Request, res: Response) {
 
 export async function getLiveRoundDetail(req: Request, res: Response) {
 	const roundId = Number(req.params.round_id);
-	const round = await fetchLiveRound(roundId);
+	const includeTeamLists =
+		String(req.query.includeTeamLists ?? "").toLowerCase() === "true";
+	const round = await fetchLiveRound(roundId, includeTeamLists);
 
 	if (!round) {
 		throw new APIError(404, "Round not found", "ROUND_NOT_FOUND");
 	}
 
 	res.json(round);
+}
+
+export async function getLiveRoundTeamLists(req: Request, res: Response) {
+	const roundId = Number(req.params.round_id);
+	const data = await fetchRoundTeamLists(roundId);
+	res.json(data);
 }
 
 export async function getLiveRoundStats(req: Request, res: Response) {

@@ -8,6 +8,22 @@ export const MatchClockSchema = z
 	})
 	.optional();
 
+export const LiveTeamListPlayerSchema = z.object({
+	playerId: z.number().nullable(),
+	firstName: z.string(),
+	lastName: z.string(),
+	displayName: z.string(),
+	number: z.number().nullable(),
+	position: z.string().nullable(),
+	isOnField: z.boolean().nullable(),
+});
+
+export const LiveMatchTeamListSchema = z.object({
+	homePlayers: z.array(LiveTeamListPlayerSchema),
+	awayPlayers: z.array(LiveTeamListPlayerSchema),
+	sourceUpdatedAt: z.string().nullable(),
+});
+
 // --- A single match within the live round ---
 export const LiveMatchSchema = z.object({
 	id: z.number(),
@@ -22,6 +38,7 @@ export const LiveMatchSchema = z.object({
 	venueName: z.string(),
 	date: z.string(),
 	clock: MatchClockSchema,
+	teamList: LiveMatchTeamListSchema.nullable().optional(),
 });
 
 // --- GET /api/live response ---
@@ -87,8 +104,24 @@ export const LiveRoundsListResponseSchema = z.object({
 	activeRound: LiveRoundResponseSchema.nullable(),
 });
 
+export const LiveRoundTeamListMatchSchema = z.object({
+	fixtureId: z.number(),
+	homeSquadId: z.number(),
+	awaySquadId: z.number(),
+	homePlayers: z.array(LiveTeamListPlayerSchema),
+	awayPlayers: z.array(LiveTeamListPlayerSchema),
+	sourceUpdatedAt: z.string().nullable(),
+});
+
+export const LiveRoundTeamListsResponseSchema = z.object({
+	roundId: z.number(),
+	matches: z.array(LiveRoundTeamListMatchSchema),
+});
+
 // --- Inferred types ---
 export type MatchClock = z.infer<typeof MatchClockSchema>;
+export type LiveTeamListPlayer = z.infer<typeof LiveTeamListPlayerSchema>;
+export type LiveMatchTeamList = z.infer<typeof LiveMatchTeamListSchema>;
 export type LiveMatch = z.infer<typeof LiveMatchSchema>;
 export type LiveRoundResponse = z.infer<typeof LiveRoundResponseSchema>;
 export type PlayerMatchRawStats = z.infer<typeof PlayerMatchRawStatsSchema>;
@@ -96,3 +129,7 @@ export type LivePlayerStat = z.infer<typeof LivePlayerStatSchema>;
 export type LiveStatsResponse = z.infer<typeof LiveStatsResponseSchema>;
 export type LiveRoundSummary = z.infer<typeof LiveRoundSummarySchema>;
 export type LiveRoundsListResponse = z.infer<typeof LiveRoundsListResponseSchema>;
+export type LiveRoundTeamListMatch = z.infer<typeof LiveRoundTeamListMatchSchema>;
+export type LiveRoundTeamListsResponse = z.infer<
+	typeof LiveRoundTeamListsResponseSchema
+>;

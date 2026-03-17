@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { LivePlayerStat } from "@nrl/types";
+import type { LiveMatch, LivePlayerStat } from "@nrl/types";
 import { PlayerAvatar } from "@/components/ui/player-avatar";
 import { ALL_STATS, statFantasyPoints } from "@/lib/stat-labels";
 import { playerPath } from "@/lib/entity-routes";
@@ -12,6 +12,7 @@ interface MatchStatsPanelProps {
   awaySquadName: string;
   homePlayers: LivePlayerStat[];
   awayPlayers: LivePlayerStat[];
+  matchStatus: LiveMatch["status"];
   selectedTeam: "home" | "away";
   onTeamChange: (team: "home" | "away") => void;
   returnTo?: string;
@@ -31,6 +32,7 @@ export function MatchStatsPanel({
   awaySquadName,
   homePlayers,
   awayPlayers,
+  matchStatus,
   selectedTeam,
   onTeamChange,
   returnTo,
@@ -48,11 +50,7 @@ export function MatchStatsPanel({
   }
 
   if (homePlayers.length === 0 && awayPlayers.length === 0) {
-    return (
-      <div className="p-6 text-center text-sm text-muted md:text-base">
-        No stats available yet
-      </div>
-    );
+    return <StatsEmptyState matchStatus={matchStatus} />;
   }
 
   const selectedTeamName =
@@ -95,6 +93,22 @@ export function MatchStatsPanel({
         players={selectedPlayers}
         returnTo={returnTo}
       />
+    </div>
+  );
+}
+
+function StatsEmptyState({ matchStatus }: { matchStatus: LiveMatch["status"] }) {
+  const copy =
+    matchStatus === "playing"
+      ? "Stats feed is starting. Check back in a moment."
+      : matchStatus === "complete"
+        ? "Stats unavailable for this match."
+        : "Stats will appear once the match starts.";
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-surface-alt/30 p-4 md:p-6">
+      <p className="text-sm font-semibold text-foreground md:text-base">No player stats yet</p>
+      <p className="mt-1 text-sm text-muted md:text-base">{copy}</p>
     </div>
   );
 }

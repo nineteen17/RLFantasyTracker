@@ -16,6 +16,7 @@ async function main() {
 		logger.info(`  Fixtures: ${result.fixtures}`);
 		logger.info(`  Players:  ${result.players}`);
 		logger.info(`  Coach:    ${result.coach}`);
+		logger.info(`  TeamLists:${result.teamLists}`);
 		logger.info(`  Derived:  ${result.derived}`);
 		logger.info(`  Duration: ${result.durationMs}ms`);
 

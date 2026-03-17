@@ -121,6 +121,33 @@ export const fixtures = pgTable(
 	],
 );
 
+export const fixtureTeamLists = pgTable(
+	"fixture_team_lists",
+	{
+		season: integer("season").notNull(),
+		roundId: integer("round_id")
+			.references(() => rounds.roundId)
+			.notNull(),
+		fixtureId: bigint("fixture_id", { mode: "number" })
+			.references(() => fixtures.fixtureId)
+			.notNull(),
+		homeSquadId: bigint("home_squad_id", { mode: "number" }).notNull(),
+		awaySquadId: bigint("away_squad_id", { mode: "number" }).notNull(),
+		homePlayers: jsonb("home_players").notNull().default(sql`'[]'::jsonb`),
+		awayPlayers: jsonb("away_players").notNull().default(sql`'[]'::jsonb`),
+		source: text("source").notNull().default("nrl.com"),
+		sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+	},
+	(t) => [
+		primaryKey({ columns: [t.roundId, t.fixtureId] }),
+		index("idx_fixture_team_lists_round").on(t.season, t.roundId),
+		index("idx_fixture_team_lists_fixture").on(t.fixtureId),
+	],
+);
+
 
 export const players = pgTable(
 	"players",
@@ -404,11 +431,12 @@ export const venuesRelations = relations(venues, ({ many }) => ({
 
 export const roundsRelations = relations(rounds, ({ many }) => ({
 	fixtures: many(fixtures),
+	fixtureTeamLists: many(fixtureTeamLists),
 	playerRoundStats: many(playerRoundStats),
 	playerMatchStatsHistory: many(playerMatchStatsHistory),
 }));
 
-export const fixturesRelations = relations(fixtures, ({ one }) => ({
+export const fixturesRelations = relations(fixtures, ({ one, many }) => ({
 	round: one(rounds, {
 		fields: [fixtures.roundId],
 		references: [rounds.roundId],
@@ -427,7 +455,22 @@ export const fixturesRelations = relations(fixtures, ({ one }) => ({
 		fields: [fixtures.venueId],
 		references: [venues.venueId],
 	}),
+	teamList: many(fixtureTeamLists),
 }));
+
+export const fixtureTeamListsRelations = relations(
+	fixtureTeamLists,
+	({ one }) => ({
+		round: one(rounds, {
+			fields: [fixtureTeamLists.roundId],
+			references: [rounds.roundId],
+		}),
+		fixture: one(fixtures, {
+			fields: [fixtureTeamLists.fixtureId],
+			references: [fixtures.fixtureId],
+		}),
+	}),
+);
 
 export const playersRelations = relations(players, ({ one, many }) => ({
 	squad: one(squads, {

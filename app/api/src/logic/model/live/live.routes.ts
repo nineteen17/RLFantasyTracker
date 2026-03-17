@@ -4,6 +4,7 @@ import validate from "@src/logic/shared/middleware/validation.middleware";
 import {
 	getLiveRounds,
 	getLiveRoundDetail,
+	getLiveRoundTeamLists,
 	getLiveRoundStats,
 	getPlayerStats,
 } from "./live.controller";
@@ -20,8 +21,29 @@ router.get(
 		params: z.object({
 			round_id: z.coerce.number().int().positive(),
 		}),
+		query: z.object({
+			includeTeamLists: z
+				.union([z.string(), z.boolean()])
+				.optional()
+				.transform((value) =>
+					typeof value === "boolean"
+						? String(value)
+						: (value ?? "false"),
+				),
+		}),
 	}),
 	getLiveRoundDetail,
+);
+
+// GET /api/live/team-lists/:round_id — team lists by round
+router.get(
+	"/team-lists/:round_id",
+	validate({
+		params: z.object({
+			round_id: z.coerce.number().int().positive(),
+		}),
+	}),
+	getLiveRoundTeamLists,
 );
 
 // GET /api/live/stats/:round_id — player stats for a round
