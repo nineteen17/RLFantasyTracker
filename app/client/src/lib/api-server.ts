@@ -34,6 +34,10 @@ export async function apiFetchServer<T>(
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
 
+  if (process.env.NODE_ENV !== "production") {
+    console.info(`[apiFetchServer] ${url}`);
+  }
+
   const res = await fetch(url, {
     ...init,
     headers,
@@ -41,6 +45,9 @@ export async function apiFetchServer<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`[apiFetchServer] Failed ${res.status} ${url}`, body);
+    }
     const message =
       typeof body === "object" &&
       body !== null &&

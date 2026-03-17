@@ -98,7 +98,7 @@ export function PlayerTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="overflow-x-auto rounded-t-lg border border-border">
       <table className="min-w-full w-max text-sm md:text-base">
         <thead className="bg-surface-alt">
           <tr>

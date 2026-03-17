@@ -60,6 +60,7 @@ const registerRoutes = async (): Promise<Router> => {
   const players = (await import("@model/players/players.routes")).default;
   const venues = (await import("@model/venues/venues.routes")).default;
   const live = (await import("@model/live/live.routes")).default;
+  const casualty = (await import("@model/casualty/casualty.routes")).default;
 
   router.use("/auth", authRateLimiter, auth);
   router.use("/api", apiRateLimiter);
@@ -67,6 +68,7 @@ const registerRoutes = async (): Promise<Router> => {
   router.use("/api/players", players);
   router.use("/api/venues", venues);
   router.use("/api/live", live);
+  router.use("/api/casualty-ward", casualty);
 
   router.get(
     "/test",

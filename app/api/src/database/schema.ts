@@ -352,6 +352,31 @@ export const playerOwnershipHistory = pgTable(
 	(t) => [primaryKey({ columns: [t.season, t.roundId, t.playerId] })],
 );
 
+export const casualtyWard = pgTable(
+	"casualty_ward",
+	{
+		competitionId: integer("competition_id").notNull(),
+		playerUrl: text("player_url").notNull(),
+		firstName: text("first_name").notNull(),
+		lastName: text("last_name").notNull(),
+		teamNickname: text("team_nickname").notNull(),
+		injury: text("injury").notNull(),
+		expectedReturn: text("expected_return").notNull(),
+		imageUrl: text("image_url"),
+		raw: jsonb("raw"),
+		sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+	},
+	(t) => [
+		primaryKey({ columns: [t.competitionId, t.playerUrl] }),
+		index("idx_casualty_ward_competition").on(t.competitionId),
+		index("idx_casualty_ward_team").on(t.teamNickname),
+		index("idx_casualty_ward_expected_return").on(t.expectedReturn),
+	],
+);
+
 // =====================
 // Relations
 // =====================

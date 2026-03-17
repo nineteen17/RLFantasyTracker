@@ -4,6 +4,13 @@ import path from "node:path";
 const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: ["@nrl/types"],
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "www.nrl.com" },
+      { protocol: "https", hostname: "rugbyimages.statsperform.com" },
+      { protocol: "http", hostname: "rugbyimages.statsperform.com" },
+    ],
+  },
 
   turbopack: {
     root: path.join(__dirname),

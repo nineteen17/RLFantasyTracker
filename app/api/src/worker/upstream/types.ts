@@ -132,3 +132,23 @@ export interface UpstreamCoachPlayer {
 }
 
 export type UpstreamCoachPlayersResponse = Record<string, UpstreamCoachPlayer>;
+
+export interface UpstreamCasualtyWardEntry {
+	firstName: string;
+	lastName: string;
+	expectedReturn: string;
+	imageUrl: string;
+	injury: string;
+	teamNickname: string;
+	url: string;
+}
+
+export interface UpstreamCasualtyWardResponse {
+	casualties: UpstreamCasualtyWardEntry[];
+	filterCompetitions?: Array<{ text: string; value: number }>;
+	filterExpectedReturns?: Array<{ text: string; value: string }>;
+	filterTeams?: Array<{ text: string; value: number }>;
+	selectedCompetitionId?: number;
+	selectedExpectedReturnValue?: string | null;
+	selectedTeamId?: number | null;
+}

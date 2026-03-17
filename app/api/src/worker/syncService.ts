@@ -5,6 +5,7 @@ import { syncRounds } from "./syncers/rounds.syncer";
 import { syncPlayers } from "./syncers/players.syncer";
 import { syncCoach } from "./syncers/coach.syncer";
 import { deriveMetrics } from "./syncers/derive.syncer";
+import { syncCasualtyWard } from "./syncers/casualty.syncer";
 import { deriveSeason } from "./utils/mappers";
 import { fetchUpstream } from "./upstream/client";
 import type { UpstreamRound } from "./upstream/types";
@@ -16,6 +17,7 @@ export interface SyncResult {
 	fixtures: number;
 	players: number;
 	coach: number;
+	casualties: number;
 	derived: number;
 	durationMs: number;
 }
@@ -56,10 +58,17 @@ export async function runFullSync(): Promise<SyncResult> {
 	logger.info("=== Full Sync Started ===");
 
 	// Phase 1: Squads + venues (parallel, no FK deps) + fetch rounds data
-	const [squadsCount, venuesCount, roundsData] = await Promise.all([
+	const [squadsCount, venuesCount, roundsData, casualtiesCount] =
+		await Promise.all([
 		syncSquads(),
 		syncVenues(),
 		fetchUpstream<UpstreamRound[]>("rounds"),
+		syncCasualtyWard().catch((error) => {
+			logger.warn(
+				`Casualty ward fetch failed during full sync: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			return 0;
+		}),
 	]);
 
 	// Derive season from first round's start date
@@ -89,6 +98,7 @@ export async function runFullSync(): Promise<SyncResult> {
 		fixtures: roundsResult.fixtures,
 		players: playersCount,
 		coach: coachCount,
+		casualties: casualtiesCount,
 		derived: derivedCount,
 		durationMs,
 	};

@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { apiFetchServer } from "@/lib/api-server";
 import { playerPath, teamPath } from "@/lib/entity-routes";
 
+export const revalidate = 3600;
+
 type TeamsResponse = {
   data: Array<{ squadId: number; name: string; fullName: string }>;
 };
@@ -68,38 +70,62 @@ async function fetchPlayerUrls(siteOrigin: string): Promise<string[]> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteOrigin = resolveSiteOrigin();
-  const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${siteOrigin}/`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 1,
     },
     {
+      url: `${siteOrigin}/players`,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
       url: `${siteOrigin}/players/search`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${siteOrigin}/teams`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.8,
     },
     {
       url: `${siteOrigin}/live`,
-      lastModified: now,
       changeFrequency: "hourly",
       priority: 0.7,
     },
     {
       url: `${siteOrigin}/byes`,
-      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
+    },
+    {
+      url: `${siteOrigin}/nrl-injury-ward`,
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
+      url: `${siteOrigin}/nrl-fantasy-points-system`,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${siteOrigin}/nrl-fantasy-breakevens`,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${siteOrigin}/privacy`,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${siteOrigin}/terms`,
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
   ];
 
@@ -111,13 +137,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamicRoutes: MetadataRoute.Sitemap = [
     ...teamUrls.map((url) => ({
       url,
-      lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.7,
     })),
     ...playerUrls.map((url) => ({
       url,
-      lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.6,
     })),

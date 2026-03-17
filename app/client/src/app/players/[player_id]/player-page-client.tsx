@@ -156,6 +156,9 @@ function resolveBackLink(
     if (/^\/live(?:\?round=\d+)?$/.test(returnToParam)) {
       return { href: returnToParam, label: "Back to Live" };
     }
+    if (/^\/nrl-injury-ward(?:\?.*)?$/.test(returnToParam)) {
+      return { href: returnToParam, label: "Back to Injury Ward" };
+    }
   }
 
   if (fromWatchlist) {

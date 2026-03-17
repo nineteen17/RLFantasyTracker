@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { SearchQuery, SearchResponse } from "@nrl/types";
 import { useSearchPlayers } from "@/hooks/api/use-search-players";
@@ -103,7 +104,7 @@ export default function PlayerSearchPageClient({
           ))}
         </div>
       ) : data ? (
-        <>
+        <div>
           <PlayerTable
             players={data.data}
             sort={filters.sort}
@@ -116,8 +117,15 @@ export default function PlayerSearchPageClient({
             offset={data.offset}
             onPageChange={handlePageChange}
           />
-        </>
+        </div>
       ) : null}
+
+      <Link
+        href="/players"
+        className="inline-flex text-sm text-muted transition-colors hover:text-accent-light hover:underline"
+      >
+        Browse A-Z player index
+      </Link>
     </div>
   );
 }

@@ -33,6 +33,11 @@ const PRIMARY_NAV_ITEMS: NavItem[] = [
     label: "Byes",
     isActive: (pathname) => pathname.startsWith("/byes"),
   },
+  {
+    href: "/nrl-injury-ward",
+    label: "Injuries",
+    isActive: (pathname) => pathname.startsWith("/nrl-injury-ward"),
+  },
 ];
 
 const WATCHLIST_NAV_ITEM: NavItem = {

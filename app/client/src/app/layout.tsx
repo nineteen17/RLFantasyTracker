@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import NavigationShell from "@/components/ui/navigation-shell";
+import SiteFooter from "@/components/ui/site-footer";
 import GoogleAnalytics from "@/components/analytics/google-analytics";
 import { EngagedSessionTracker } from "@/components/analytics/engaged-session-tracker";
 
@@ -66,7 +67,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="antialiased bg-bg">
+      <body className="flex min-h-screen flex-col antialiased bg-bg">
         <QueryProvider>
           <Suspense>
             <GoogleAnalytics />
@@ -74,9 +75,10 @@ export default function RootLayout({
             <NavigationShell />
           </Suspense>
 
-          <main className="mx-auto max-w-[1600px] px-4 pb-20 pt-24 sm:px-6 md:pt-28 lg:px-8">
+          <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-20 pt-24 sm:px-6 md:pt-28 lg:px-8">
             {children}
           </main>
+          <SiteFooter />
         </QueryProvider>
       </body>
     </html>

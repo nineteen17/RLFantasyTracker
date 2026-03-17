@@ -12,6 +12,10 @@ import {
   PLAYERS_OPENAPI_ROUTES,
   PLAYERS_OPENAPI_SCHEMAS,
 } from "@src/logic/model/players/players.openapi";
+import {
+  CASUALTY_OPENAPI_ROUTES,
+  CASUALTY_OPENAPI_SCHEMAS,
+} from "@src/logic/model/casualty/casualty.openapi";
 
 const registry = new OpenAPIRegistry();
 
@@ -20,6 +24,7 @@ const schemas = {
   ...AUTH_OPENAPI_SCHEMAS,
   ...TEAMS_OPENAPI_SCHEMAS,
   ...PLAYERS_OPENAPI_SCHEMAS,
+  ...CASUALTY_OPENAPI_SCHEMAS,
 };
 
 // Routes defined in [feature].routes.ts
@@ -27,6 +32,7 @@ const routes = {
   ...AUTH_OPENAPI_ROUTES,
   ...TEAMS_OPENAPI_ROUTES,
   ...PLAYERS_OPENAPI_ROUTES,
+  ...CASUALTY_OPENAPI_ROUTES,
 };
 
 // ====================

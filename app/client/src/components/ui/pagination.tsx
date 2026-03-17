@@ -18,28 +18,27 @@ export function Pagination({
   const canGoNext = offset + limit < total;
 
   return (
-    <div className="flex items-center justify-between border-t border-border pt-4">
-      <div className="text-sm text-muted">
-        Showing {offset + 1} to {Math.min(offset + limit, total)} of {total}{" "}
-        results
+    <div className="flex items-center justify-between rounded-b-lg border border-t-0 border-border bg-surface/40 px-3 py-3 md:px-4">
+      <div className="text-xs text-muted sm:text-sm">
+        {offset + 1}–{Math.min(offset + limit, total)} of {total}
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <button
           type="button"
           onClick={() => onPageChange(offset - limit)}
           disabled={!canGoPrev}
-          className="rounded border border-border bg-surface px-3 py-1 text-sm hover:bg-surface-alt disabled:opacity-50"
+          className="rounded border border-border bg-surface px-2.5 py-1 text-xs transition-colors hover:bg-surface-alt disabled:opacity-40 sm:px-3 sm:text-sm"
         >
-          Previous
+          Prev
         </button>
-        <span className="px-3 py-1 text-sm text-muted">
-          Page {currentPage} of {totalPages}
+        <span className="min-w-[4rem] text-center text-xs text-muted sm:text-sm">
+          {currentPage} / {totalPages}
         </span>
         <button
           type="button"
           onClick={() => onPageChange(offset + limit)}
           disabled={!canGoNext}
-          className="rounded border border-border bg-surface px-3 py-1 text-sm hover:bg-surface-alt disabled:opacity-50"
+          className="rounded border border-border bg-surface px-2.5 py-1 text-xs transition-colors hover:bg-surface-alt disabled:opacity-40 sm:px-3 sm:text-sm"
         >
           Next
         </button>
