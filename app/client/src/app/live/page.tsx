@@ -8,6 +8,7 @@ import { formatMatchDate, type TimezoneValue } from "@/lib/timezone";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimezonePicker } from "@/components/timezone-picker";
+import { TeamLogo } from "@/components/ui/team-logo";
 import type { LiveMatch, LiveRoundSummary } from "@nrl/types";
 
 function LivePageContent() {
@@ -145,7 +146,7 @@ function LivePageContent() {
   );
 }
 
-function Countdown({ targetDate }: { targetDate: string }) {
+function KickoffCountdown({ targetDate }: { targetDate: string }) {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -158,10 +159,10 @@ function Countdown({ targetDate }: { targetDate: string }) {
     };
   }, []);
 
-  if (now == null) return null;
+  if (now == null) return <>Starts soon</>;
 
   const diff = new Date(targetDate).getTime() - now;
-  if (diff <= 0) return null;
+  if (diff <= 0) return <>Starts soon</>;
 
   const days = Math.floor(diff / 86_400_000);
   const hours = Math.floor((diff % 86_400_000) / 3_600_000);
@@ -172,11 +173,7 @@ function Countdown({ targetDate }: { targetDate: string }) {
   if (hours > 0) parts.push(`${hours}h`);
   parts.push(`${mins}m`);
 
-  return (
-    <span className="text-xs text-muted/80">
-      Starts in <span className="font-mono">{parts.join(" ")}</span>
-    </span>
-  );
+  return <>Starts in {parts.join(" ")}</>;
 }
 
 function MatchScoreCard({
@@ -190,8 +187,6 @@ function MatchScoreCard({
 }) {
   const isLive = match.status === "playing";
   const isComplete = match.status === "complete";
-  const isUpcoming = !isLive && !isComplete;
-
   const homeWon = isComplete && match.homeScore > match.awayScore;
   const awayWon = isComplete && match.awayScore > match.homeScore;
 
@@ -225,43 +220,25 @@ function MatchScoreCard({
       className="flex flex-col rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-hover hover:shadow-lg hover:shadow-accent/5"
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs text-muted truncate mr-2">
-          {match.venueName}
-        </span>
-        <div className="flex items-center gap-2 shrink-0">
-          {isLive && match.clock && (
-            <span className="font-mono text-xs text-accent-light">
-              {clockDisplay.label}
-            </span>
-          )}
-          <span
-            className={`rounded px-2 py-0.5 text-xs font-medium ${
-              isLive
-                ? isAwaitingFullTime
-                  ? "bg-amber-500/20 text-amber-200"
-                  : "bg-danger text-white"
-                : isComplete
-                  ? "bg-surface-alt text-muted"
-                  : "bg-surface-alt text-muted/60"
-            }`}
-          >
-            {isLive
-              ? isAwaitingFullTime
-                ? "FT Soon"
-                : "LIVE"
-              : isComplete
-                ? "FT"
-                : formatMatchDate(match.date, tz)}
-          </span>
+        <div className="mr-2 min-w-0 truncate text-xs text-muted">{match.venueName}</div>
+        <div className="shrink-0 text-right text-[11px] text-muted/80">
+          {formatMatchDate(match.date, tz)}
         </div>
       </div>
 
       <div className="flex flex-1 items-center justify-between">
         <div className="min-w-0 flex-1">
-          <div
-            className={`truncate text-lg font-bold ${awayWon ? "text-muted/50" : ""}`}
-          >
-            {match.homeSquadName}
+          <div className="flex items-center gap-2">
+            <TeamLogo
+              squadId={match.homeSquadId}
+              teamName={match.homeSquadName}
+              className="h-7 w-7 sm:h-8 sm:w-8"
+            />
+            <div
+              className={`truncate text-sm font-bold sm:text-lg ${awayWon ? "text-muted/50" : ""}`}
+            >
+              {match.homeSquadName}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3 px-4">
@@ -278,21 +255,48 @@ function MatchScoreCard({
           </span>
         </div>
         <div className="min-w-0 flex-1 text-right">
-          <div
-            className={`truncate text-lg font-bold ${homeWon ? "text-muted/50" : ""}`}
-          >
-            {match.awaySquadName}
+          <div className="flex items-center justify-end gap-2">
+            <div
+              className={`truncate text-sm font-bold sm:text-lg ${homeWon ? "text-muted/50" : ""}`}
+            >
+              {match.awaySquadName}
+            </div>
+            <TeamLogo
+              squadId={match.awaySquadId}
+              teamName={match.awaySquadName}
+              className="h-7 w-7 sm:h-8 sm:w-8"
+            />
           </div>
         </div>
       </div>
 
-      <div className="mt-2 text-center text-xs">
-        {isUpcoming ? (
-          <Countdown targetDate={match.date} />
-        ) : (
-          <span>&nbsp;</span>
+      <div className="mt-2 flex items-center justify-center gap-2">
+        {isLive && match.clock && (
+          <span className="font-mono text-xs text-accent-light">
+            {clockDisplay.label}
+          </span>
         )}
+        <span
+          className={`rounded px-2 py-0.5 text-xs font-medium ${
+            isLive
+              ? isAwaitingFullTime
+                ? "bg-amber-500/20 text-amber-200"
+                : "bg-danger text-white"
+              : isComplete
+                ? "bg-surface-alt text-muted"
+                : "bg-surface-alt text-muted/60"
+          }`}
+        >
+          {isLive
+            ? isAwaitingFullTime
+              ? "FT Soon"
+              : "LIVE"
+            : isComplete
+              ? "FT"
+              : <KickoffCountdown targetDate={match.date} />}
+        </span>
       </div>
+
     </Link>
   );
 }

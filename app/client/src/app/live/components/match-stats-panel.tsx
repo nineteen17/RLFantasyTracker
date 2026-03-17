@@ -73,7 +73,7 @@ export function MatchStatsPanel({
                   : "text-muted hover:text-foreground"
               }`}
             >
-              {homeSquadName}
+              <span className="truncate">{homeSquadName}</span>
             </button>
             <button
               type="button"
@@ -84,7 +84,7 @@ export function MatchStatsPanel({
                   : "text-muted hover:text-foreground"
               }`}
             >
-              {awaySquadName}
+              <span className="truncate">{awaySquadName}</span>
             </button>
           </div>
         </div>
@@ -142,9 +142,7 @@ function TeamStatsTable({
 
   return (
     <div className="p-4">
-      <h3 className="mb-2 text-sm font-semibold text-accent-light md:text-base">
-        {teamName}
-      </h3>
+      <h3 className="mb-2 text-sm font-semibold text-accent-light md:text-base">{teamName}</h3>
       <div className="overflow-x-auto">
         <table className="min-w-max table-fixed text-xs md:text-base">
           <colgroup>

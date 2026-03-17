@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useMemo, useState } from "react";
 import type { FixtureStripItem } from "@nrl/types";
+import { TeamLogo } from "@/components/ui/team-logo";
 
 export interface FixtureStripProps {
   fixtures: FixtureStripItem[];
@@ -240,6 +241,7 @@ export function FixtureStrip({
             const fixture = card.fixture;
             const isHome = fixture.homeSquadId === squadId;
             const opponent = isHome ? fixture.awaySquad : fixture.homeSquad;
+            const opponentSquadId = isHome ? fixture.awaySquadId : fixture.homeSquadId;
             const isCurrent = card.roundId === currentRoundId;
             const kickoff = kickoffMs(fixture.kickoffAt);
             const isPast = nowMs != null && kickoff != null && kickoff < nowMs && !isCurrent;
@@ -248,7 +250,7 @@ export function FixtureStrip({
               <div
                 key={fixture.fixtureId ?? idx}
                 ref={isCurrent ? currentRef : undefined}
-                className={`flex min-w-[90px] flex-col items-center rounded-lg border p-3 transition-colors ${
+                className={`flex min-w-[104px] flex-col items-center rounded-lg border p-3 transition-colors ${
                   isCurrent
                     ? "border-accent-light bg-accent-light/10"
                     : isPast
@@ -262,6 +264,11 @@ export function FixtureStrip({
                 <div className="mt-1 text-center text-sm font-medium">
                   {isHome ? "vs" : "@"}
                 </div>
+                <TeamLogo
+                  squadId={opponentSquadId}
+                  teamName={opponent?.name ?? "TBD"}
+                  className="mt-1 h-7 w-7"
+                />
                 <div className="mt-1 text-center text-sm">
                   {opponent?.shortName ?? opponent?.name ?? "TBD"}
                 </div>

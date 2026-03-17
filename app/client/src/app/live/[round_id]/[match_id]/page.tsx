@@ -9,6 +9,7 @@ import { formatMatchDate } from "@/lib/timezone";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimezonePicker } from "@/components/timezone-picker";
+import { TeamLogo } from "@/components/ui/team-logo";
 import { MatchStatsPanel } from "../../components/match-stats-panel";
 import type { LiveMatch, LivePlayerStat } from "@nrl/types";
 
@@ -114,8 +115,60 @@ export default function MatchDetailPage({
       {/* Match header */}
       <div className="rounded-lg border border-border bg-surface p-6">
         <div className="mb-4 flex items-center justify-between">
-          <span className="text-sm text-muted">{match.venueName}</span>
-          <div className="flex items-center gap-2">
+          <div className="min-w-0 truncate text-sm text-muted">{match.venueName}</div>
+          <div className="shrink-0 text-right text-xs text-muted/80">
+            {formatMatchDate(match.date, tz)}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <TeamLogo
+                squadId={match.homeSquadId}
+                teamName={match.homeSquadName}
+                showFallback={false}
+                className="hidden h-8 w-8 md:block"
+              />
+              <div
+                className={`truncate text-xl font-bold leading-tight sm:text-3xl ${awayWon ? "text-muted/50" : ""}`}
+              >
+                {match.homeSquadName}
+              </div>
+            </div>
+          </div>
+          <div className="shrink-0 flex items-center gap-2 px-2 sm:gap-4 sm:px-6">
+            <span
+              className={`text-3xl font-bold tabular-nums sm:text-4xl ${homeWon ? "text-accent-light" : awayWon ? "text-muted/50" : ""}`}
+            >
+              {match.homeScore}
+            </span>
+            <span className="text-xl text-muted">-</span>
+            <span
+              className={`text-3xl font-bold tabular-nums sm:text-4xl ${awayWon ? "text-accent-light" : homeWon ? "text-muted/50" : ""}`}
+            >
+              {match.awayScore}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1 text-right">
+            <div className="flex items-center justify-end gap-2">
+              <div
+                className={`truncate text-xl font-bold leading-tight sm:text-3xl ${homeWon ? "text-muted/50" : ""}`}
+              >
+                {match.awaySquadName}
+              </div>
+              <TeamLogo
+                squadId={match.awaySquadId}
+                teamName={match.awaySquadName}
+                showFallback={false}
+                className="hidden h-8 w-8 md:block"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 text-center text-sm text-muted/80">
+          <div className="inline-flex items-center gap-2">
             {isPlaying && match.clock && (
               <span className="font-mono text-sm text-accent-light">
                 {clockDisplay.label}
@@ -135,47 +188,12 @@ export default function MatchDetailPage({
                   ? "FT Soon"
                   : "LIVE"
                 : isComplete
-                  ? "Full Time"
-                  : formatMatchDate(match.date, tz)}
+                  ? "FT"
+                  : <KickoffCountdown targetDate={match.date} />}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 sm:gap-4">
-          <div className="min-w-0 flex-1">
-            <div
-              className={`truncate text-xl font-bold leading-tight sm:text-3xl ${awayWon ? "text-muted/50" : ""}`}
-            >
-              {match.homeSquadName}
-            </div>
-          </div>
-          <div className="shrink-0 flex items-center gap-2 px-2 sm:gap-4 sm:px-6">
-            <span
-              className={`text-3xl font-bold tabular-nums sm:text-4xl ${homeWon ? "text-accent-light" : awayWon ? "text-muted/50" : ""}`}
-            >
-              {match.homeScore}
-            </span>
-            <span className="text-xl text-muted">-</span>
-            <span
-              className={`text-3xl font-bold tabular-nums sm:text-4xl ${awayWon ? "text-accent-light" : homeWon ? "text-muted/50" : ""}`}
-            >
-              {match.awayScore}
-            </span>
-          </div>
-          <div className="min-w-0 flex-1 text-right">
-            <div
-              className={`truncate text-xl font-bold leading-tight sm:text-3xl ${homeWon ? "text-muted/50" : ""}`}
-            >
-              {match.awaySquadName}
-            </div>
-          </div>
-        </div>
-
-        {!isPlaying && !isComplete && (
-          <div className="mt-3 text-center">
-            <Countdown targetDate={match.date} />
-          </div>
-        )}
       </div>
 
       {/* Player stats */}
@@ -195,7 +213,7 @@ export default function MatchDetailPage({
   );
 }
 
-function Countdown({ targetDate }: { targetDate: string }) {
+function KickoffCountdown({ targetDate }: { targetDate: string }) {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -208,10 +226,10 @@ function Countdown({ targetDate }: { targetDate: string }) {
     };
   }, []);
 
-  if (now == null) return null;
+  if (now == null) return <>Starts soon</>;
 
   const diff = new Date(targetDate).getTime() - now;
-  if (diff <= 0) return null;
+  if (diff <= 0) return <>Starts soon</>;
 
   const days = Math.floor(diff / 86_400_000);
   const hours = Math.floor((diff % 86_400_000) / 3_600_000);
@@ -222,9 +240,5 @@ function Countdown({ targetDate }: { targetDate: string }) {
   if (hours > 0) parts.push(`${hours}h`);
   parts.push(`${mins}m`);
 
-  return (
-    <span className="text-sm text-muted/80">
-      Starts in <span className="font-mono">{parts.join(" ")}</span>
-    </span>
-  );
+  return <>Starts in {parts.join(" ")}</>;
 }

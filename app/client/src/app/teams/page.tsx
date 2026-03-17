@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { TeamsListResponse, Squad } from "@nrl/types";
 import { ErrorState } from "@/components/ui/error-state";
+import { TeamLogo } from "@/components/ui/team-logo";
 import { apiFetchServer } from "@/lib/api-server";
 import { teamPath } from "@/lib/entity-routes";
 
@@ -44,10 +45,21 @@ export default async function TeamsPage() {
           <Link
             key={team.squadId}
             href={teamPath(team.squadId, team.fullName || team.name)}
-            className="rounded-lg border border-border bg-surface p-6 transition hover:border-border-hover hover:shadow-lg hover:shadow-accent/10"
+            className="rounded-lg border border-border bg-surface p-4 transition hover:border-border-hover hover:shadow-lg hover:shadow-accent/10 sm:p-6"
           >
-            <h2 className="text-xl font-semibold">{team.name}</h2>
-            <p className="mt-1 text-sm text-muted">{team.fullName}</p>
+            <div className="flex items-center gap-3">
+              <TeamLogo
+                squadId={team.squadId}
+                teamName={team.name}
+                className="h-10 w-10 sm:h-12 sm:w-12"
+              />
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold sm:text-xl">
+                  {team.name}
+                </h2>
+                <p className="mt-1 truncate text-sm text-muted">{team.fullName}</p>
+              </div>
+            </div>
           </Link>
         ))}
       </div>
