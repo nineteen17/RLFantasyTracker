@@ -16,6 +16,8 @@ export function usePlayer(playerId: number, options: UsePlayerOptions = {}) {
     queryKey: playerKeys.detail(playerId),
     queryFn: () => apiFetch<PlayerDetailResponse>(`/api/players/${playerId}`),
     enabled: playerId > 0,
+    staleTime: 0,
+    refetchOnMount: "always",
     initialData: options.initialData,
   });
 }
@@ -32,7 +34,8 @@ export function usePlayerHistory(
         `/api/players/${playerId}/history?includePreseason=${includePreseason}`,
       ),
     enabled: playerId > 0,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: "always",
     initialData: options.initialData,
   });
 }
