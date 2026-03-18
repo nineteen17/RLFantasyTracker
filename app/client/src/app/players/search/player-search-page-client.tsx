@@ -81,16 +81,28 @@ export default function PlayerSearchPageClient({
       </div>
 
       <div>
-        <SearchBar
-          value={filters.q ?? ""}
-          onChange={(q) => updateFilters({ q })}
-        />
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <SearchBar
+              value={filters.q ?? ""}
+              onChange={(q) => updateFilters({ q })}
+            />
+          </div>
+          <SearchFilters
+            squadId={filters.squad_id}
+            position={filters.position}
+            status={filters.status}
+            onFilterChange={updateFilters}
+            mode="mobileTrigger"
+          />
+        </div>
         <div className="mt-3">
           <SearchFilters
             squadId={filters.squad_id}
             position={filters.position}
             status={filters.status}
             onFilterChange={updateFilters}
+            mode="desktopControls"
           />
         </div>
       </div>

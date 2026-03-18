@@ -72,6 +72,14 @@ function positionLabel(positions: number[]): string {
   return positions.map((p) => POSITION_LABELS[p] ?? p).join("/");
 }
 
+function formatCompactPlayerName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return fullName;
+  const firstInitial = parts[0].charAt(0).toUpperCase();
+  const surname = parts[parts.length - 1];
+  return `${firstInitial}. ${surname}`;
+}
+
 export function PlayerTable({
   players,
   sort,
@@ -158,9 +166,15 @@ export function PlayerTable({
                       </button>
                       <Link
                         href={`${playerPath(player.playerId, player.fullName)}?from=search`}
+                        aria-label={player.fullName}
+                        title={player.fullName}
                         className="line-clamp-2 font-medium leading-tight text-accent-light hover:underline"
                       >
-                        {player.fullName}
+                        <span className="md:hidden" aria-hidden="true">
+                          {formatCompactPlayerName(player.fullName)}
+                        </span>
+                        <span className="sr-only md:hidden">{player.fullName}</span>
+                        <span className="hidden md:inline">{player.fullName}</span>
                       </Link>
                     </div>
                     <div className="mt-0.5 text-xs text-muted md:text-sm">

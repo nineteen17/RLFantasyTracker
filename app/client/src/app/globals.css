@@ -177,3 +177,21 @@ body {
   border: none;
   background: transparent;
 }
+
+.mobile-filter-done {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+  color: var(--theme-color-text);
+}
+
+:root[data-theme="light"] .mobile-filter-done {
+  background: rgba(124, 58, 237, 0.12) !important;
+  border-color: rgba(124, 58, 237, 0.24) !important;
+  color: #5b21b6 !important;
+}
+
+:root[data-theme="light"] .mobile-filter-done:hover {
+  background: rgba(124, 58, 237, 0.18) !important;
+  border-color: rgba(124, 58, 237, 0.34) !important;
+  color: #4c1d95 !important;
+}
