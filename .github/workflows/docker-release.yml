@@ -73,35 +73,29 @@ jobs:
           provenance: true
           sbom: true
 
-      - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.2.3
-        with:
-          version: v0.68.1
-          cache: true
-
       - name: Scan API image (Trivy)
+        uses: aquasecurity/trivy-action@0.33.1
         env:
           TRIVY_USERNAME: ${{ env.DOCKERHUB_USERNAME }}
           TRIVY_PASSWORD: ${{ env.DOCKERHUB_TOKEN }}
-        run: |
-          trivy image \
-            --severity CRITICAL,HIGH \
-            --ignore-unfixed \
-            --format table \
-            --exit-code 1 \
-            docker.io/${DOCKERHUB_USERNAME}/rlfantasy-api:sha-${GITHUB_SHA}
+        with:
+          image-ref: docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-api:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
 
       - name: Scan Web image (Trivy)
+        uses: aquasecurity/trivy-action@0.33.1
         env:
           TRIVY_USERNAME: ${{ env.DOCKERHUB_USERNAME }}
           TRIVY_PASSWORD: ${{ env.DOCKERHUB_TOKEN }}
-        run: |
-          trivy image \
-            --severity CRITICAL,HIGH \
-            --ignore-unfixed \
-            --format table \
-            --exit-code 1 \
-            docker.io/${DOCKERHUB_USERNAME}/rlfantasy-web:sha-${GITHUB_SHA}
+        with:
+          image-ref: docker.io/${{ env.DOCKERHUB_USERNAME }}/rlfantasy-web:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
 
       - name: Emit image digests
         run: |
