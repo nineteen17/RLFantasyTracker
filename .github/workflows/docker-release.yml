@@ -47,6 +47,7 @@ jobs:
         with:
           context: .
           file: ./deploy/docker/api.Dockerfile
+          platforms: linux/amd64
           push: true
           no-cache: true
           tags: |
@@ -61,6 +62,7 @@ jobs:
         with:
           context: .
           file: ./deploy/docker/web.Dockerfile
+          platforms: linux/amd64
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=https://${{ env.API_DOMAIN }}
@@ -74,6 +76,7 @@ jobs:
       - name: Scan API image (Trivy)
         run: |
           docker run --rm \
+            --platform linux/amd64 \
             -v "$HOME/.docker:/root/.docker:ro" \
             aquasec/trivy:latest \
             image \
@@ -86,6 +89,7 @@ jobs:
       - name: Scan Web image (Trivy)
         run: |
           docker run --rm \
+            --platform linux/amd64 \
             -v "$HOME/.docker:/root/.docker:ro" \
             aquasec/trivy:latest \
             image \
