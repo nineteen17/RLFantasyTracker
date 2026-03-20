@@ -17,13 +17,13 @@ export default function Home() {
     <div className="relative left-1/2 right-1/2 -mt-24 -mb-20 w-screen -translate-x-1/2 md:-mt-28">
       <section className="relative flex min-h-svh items-center overflow-hidden px-5 pb-6 pt-20 sm:px-10 sm:pb-14 sm:pt-24 md:pt-28 lg:px-14 lg:pb-20">
         <Image
-          src="/stadium-250301_akk_1546-1.jpg"
+          src="/Allegiant-Stadium-Las-Vegas-NRL-2025.avif"
           alt=""
           fill
           priority
           fetchPriority="high"
           sizes="100vw"
-          className="hero-bg-image object-cover object-center will-change-transform"
+          className="hero-bg-image object-cover object-center"
         />
         <div className="hero-overlay-side absolute inset-0" />
         <div className="hero-overlay-bottom absolute inset-0" />

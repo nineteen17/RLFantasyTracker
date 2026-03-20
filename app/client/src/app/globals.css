@@ -58,6 +58,34 @@ body {
 /* Hero image treatments tuned per theme to avoid washout in light mode. */
 .hero-bg-image {
   filter: none;
+  animation: hero-kb-scale 40s ease-in-out infinite,
+    hero-kb-origin 40s ease-in-out infinite;
+}
+
+@keyframes hero-kb-scale {
+  0%,
+  100% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes hero-kb-origin {
+  0%,
+  100% {
+    transform-origin: 30% 60%;
+  }
+  25% {
+    transform-origin: 70% 55%;
+  }
+  50% {
+    transform-origin: 65% 40%;
+  }
+  75% {
+    transform-origin: 35% 45%;
+  }
 }
 
 .hero-overlay-side {
