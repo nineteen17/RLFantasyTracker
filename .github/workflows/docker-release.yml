@@ -73,13 +73,18 @@ jobs:
           provenance: true
           sbom: true
 
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.3
+        with:
+          version: v0.68.1
+          cache: true
+
       - name: Scan API image (Trivy)
+        env:
+          TRIVY_USERNAME: ${{ env.DOCKERHUB_USERNAME }}
+          TRIVY_PASSWORD: ${{ env.DOCKERHUB_TOKEN }}
         run: |
-          docker run --rm \
-            --platform linux/amd64 \
-            -v "$HOME/.docker:/root/.docker:ro" \
-            aquasec/trivy:latest \
-            image \
+          trivy image \
             --severity CRITICAL,HIGH \
             --ignore-unfixed \
             --format table \
@@ -87,12 +92,11 @@ jobs:
             docker.io/${DOCKERHUB_USERNAME}/rlfantasy-api:sha-${GITHUB_SHA}
 
       - name: Scan Web image (Trivy)
+        env:
+          TRIVY_USERNAME: ${{ env.DOCKERHUB_USERNAME }}
+          TRIVY_PASSWORD: ${{ env.DOCKERHUB_TOKEN }}
         run: |
-          docker run --rm \
-            --platform linux/amd64 \
-            -v "$HOME/.docker:/root/.docker:ro" \
-            aquasec/trivy:latest \
-            image \
+          trivy image \
             --severity CRITICAL,HIGH \
             --ignore-unfixed \
             --format table \
