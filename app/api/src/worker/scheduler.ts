@@ -4,6 +4,7 @@ import { fetchUpstream } from "./upstream/client";
 import type { UpstreamRound, UpstreamMatch } from "./upstream/types";
 import { runFullSync, runLightSync } from "./syncService";
 import { runOfficialHistoryIncrementalSync } from "./history/official-history.incremental";
+import type { OfficialHistorySyncOptions } from "./history/official-history.incremental";
 import { syncTeamListsForRound } from "./syncers/team-lists.syncer";
 import { deriveSeason } from "./utils/mappers";
 
@@ -97,7 +98,7 @@ function resolveHistorySyncLookbackRounds(): number {
 
 async function runScheduledFullSync(
 	reason: string,
-	historyReason: string,
+	historyReason: NonNullable<OfficialHistorySyncOptions["reason"]>,
 ): Promise<void> {
 	await safeSyncRun(reason, () => runFullSync());
 

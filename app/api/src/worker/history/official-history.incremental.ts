@@ -14,7 +14,12 @@ import {
 	upsertHistoryRows,
 } from "./footystats-history.ingest";
 
-type SyncReason = "match-complete" | "round-complete" | "nightly-reconcile" | "manual";
+type SyncReason =
+	| "match-complete"
+	| "round-complete"
+	| "nightly-reconcile"
+	| "team-lists-baseline"
+	| "manual";
 
 export interface OfficialHistorySyncOptions {
 	dryRun?: boolean;
