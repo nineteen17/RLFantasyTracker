@@ -4,6 +4,7 @@ const fetchUpstreamMock = vi.fn();
 const runFullSyncMock = vi.fn();
 const runLightSyncMock = vi.fn();
 const runOfficialHistoryIncrementalSyncMock = vi.fn();
+const syncTeamListsForRoundMock = vi.fn();
 const cronScheduleMock = vi.fn();
 
 vi.mock("node-cron", () => ({
@@ -31,6 +32,10 @@ vi.mock("@src/worker/syncService", () => ({
 
 vi.mock("@src/worker/history/official-history.incremental", () => ({
 	runOfficialHistoryIncrementalSync: runOfficialHistoryIncrementalSyncMock,
+}));
+
+vi.mock("@src/worker/syncers/team-lists.syncer", () => ({
+	syncTeamListsForRound: syncTeamListsForRoundMock,
 }));
 
 function createRound(
@@ -139,5 +144,49 @@ describe("scheduler", () => {
 				lookbackRounds: 3,
 			}),
 		);
+	});
+
+	it("runs the Tuesday 6:05 PM NZ cron through the same full sync path", async () => {
+		fetchUpstreamMock.mockResolvedValue([]);
+		runFullSyncMock.mockResolvedValue({
+			squads: 0,
+			venues: 0,
+			rounds: 0,
+			fixtures: 0,
+			players: 0,
+			coach: 0,
+			derived: 0,
+			durationMs: 1,
+		});
+		runOfficialHistoryIncrementalSyncMock.mockResolvedValue({
+			status: "success",
+		});
+
+		const { startScheduler } = await import("@src/worker/scheduler");
+		startScheduler();
+
+		expect(cronScheduleMock).toHaveBeenCalledWith(
+			"5 18 * * 2",
+			expect.any(Function),
+			{ timezone: "Pacific/Auckland" },
+		);
+
+		const weeklyCronCall = cronScheduleMock.mock.calls.find(
+			([expression]) => expression === "5 18 * * 2",
+		);
+		expect(weeklyCronCall).toBeDefined();
+
+		const weeklyCronCallback = weeklyCronCall?.[1];
+		expect(weeklyCronCallback).toBeTypeOf("function");
+
+		await weeklyCronCallback?.();
+
+		expect(runFullSyncMock).toHaveBeenCalledTimes(1);
+		expect(runOfficialHistoryIncrementalSyncMock).toHaveBeenCalledTimes(1);
+		expect(runOfficialHistoryIncrementalSyncMock).toHaveBeenCalledWith({
+			reason: "team-lists-baseline",
+			lookbackRounds: 3,
+		});
+		expect(runLightSyncMock).not.toHaveBeenCalled();
 	});
 });

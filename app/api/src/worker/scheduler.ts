@@ -36,7 +36,7 @@ const TEAM_LIST_BASELINE_SYNC_ENABLED =
 const TEAM_LIST_BASELINE_SYNC_CRON =
 	process.env.TEAM_LIST_BASELINE_SYNC_CRON ?? "5 18 * * 2";
 const TEAM_LIST_BASELINE_SYNC_TIMEZONE =
-	process.env.TEAM_LIST_BASELINE_SYNC_TIMEZONE ?? "Australia/Sydney";
+	process.env.TEAM_LIST_BASELINE_SYNC_TIMEZONE ?? "Pacific/Auckland";
 
 /** In-memory match status tracker to detect transitions */
 let previousStatuses = new Map<number, string>();
@@ -46,21 +46,6 @@ let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let syncing = false;
 let historySyncing = false;
 const handledTeamListWindows = new Map<string, number>();
-
-function resolveTeamListTargetRound(rounds: UpstreamRound[]): UpstreamRound | null {
-	const active = rounds.find((round) => round.status === "active");
-	if (active) return active;
-
-	const scheduled = rounds
-		.filter((round) => round.status === "scheduled")
-		.sort(
-			(a, b) =>
-				new Date(a.start).getTime() - new Date(b.start).getTime(),
-		);
-	if (scheduled.length > 0) return scheduled[0];
-
-	return null;
-}
 
 function clearStaleTeamListWindows(nowMs: number): void {
 	for (const [key, at] of handledTeamListWindows.entries()) {
@@ -103,19 +88,28 @@ function hasUpcomingKickoffWithinWindow(rounds: UpstreamRound[]): boolean {
 	return false;
 }
 
-async function runBaselineTeamListSync(): Promise<void> {
-	const rounds = await fetchUpstream<UpstreamRound[]>("rounds");
-	const target = resolveTeamListTargetRound(rounds);
-	if (!target) {
-		logger.warn(
-			"[Scheduler] Team-list baseline sync skipped — no active/scheduled round",
-		);
+function resolveHistorySyncLookbackRounds(): number {
+	return Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
+		HISTORY_SYNC_LOOKBACK_ROUNDS > 0
+		? HISTORY_SYNC_LOOKBACK_ROUNDS
+		: 3;
+}
+
+async function runScheduledFullSync(
+	reason: string,
+	historyReason: string,
+): Promise<void> {
+	await safeSyncRun(reason, () => runFullSync());
+
+	if (!ENABLE_HISTORY_SYNC) {
 		return;
 	}
 
-	await syncTeamListsForRound({
-		roundId: target.id,
-		season: deriveSeason(target.start),
+	await safeHistorySyncRun(historyReason, async () => {
+		await runOfficialHistoryIncrementalSync({
+			reason: historyReason,
+			lookbackRounds: resolveHistorySyncLookbackRounds(),
+		});
 	});
 }
 
@@ -187,7 +181,7 @@ async function runDueKickoffWindowTeamListSyncs(
 /**
  * Start the sync scheduler:
  * 1. Daily cron at 4:00 AM AEST (18:00 UTC previous day)
- * 2. Weekly team-list baseline cron (Tuesday 6:05 PM)
+ * 2. Weekly full sync + team-list baseline cron (Tuesday 6:05 PM Pacific/Auckland)
  * 3. Match-aware poller
  */
 export function startScheduler(): void {
@@ -198,19 +192,7 @@ export function startScheduler(): void {
 		logger.info(
 			"[Scheduler] Daily cron triggered — running full sync + nightly history reconcile",
 		);
-		await safeSyncRun("daily-cron", () => runFullSync());
-		if (ENABLE_HISTORY_SYNC) {
-			await safeHistorySyncRun("nightly-reconcile", async () => {
-				await runOfficialHistoryIncrementalSync({
-					reason: "nightly-reconcile",
-					lookbackRounds:
-						Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
-						HISTORY_SYNC_LOOKBACK_ROUNDS > 0
-							? HISTORY_SYNC_LOOKBACK_ROUNDS
-							: 3,
-				});
-			});
-		}
+		await runScheduledFullSync("daily-cron", "nightly-reconcile");
 	});
 
 	logger.info("[Scheduler] Daily cron scheduled (4:00 AM AEST)");
@@ -220,11 +202,12 @@ export function startScheduler(): void {
 			TEAM_LIST_BASELINE_SYNC_CRON,
 			async () => {
 				logger.info(
-					"[Scheduler] Weekly team-list baseline cron triggered",
+					"[Scheduler] Tuesday 6:05 PM NZ cron triggered — running full sync + history reconcile",
 				);
-				await safeSyncRun("team-lists-baseline", async () => {
-					await runBaselineTeamListSync();
-				});
+				await runScheduledFullSync(
+					"team-lists-baseline",
+					"team-lists-baseline",
+				);
 			},
 			{ timezone: TEAM_LIST_BASELINE_SYNC_TIMEZONE },
 		);
@@ -276,11 +259,7 @@ async function poll(): Promise<void> {
 						async () => {
 							await runOfficialHistoryIncrementalSync({
 								reason: "round-complete",
-								lookbackRounds:
-									Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
-									HISTORY_SYNC_LOOKBACK_ROUNDS > 0
-										? HISTORY_SYNC_LOOKBACK_ROUNDS
-										: 3,
+								lookbackRounds: resolveHistorySyncLookbackRounds(),
 								targetRoundId: candidateRound.id,
 							});
 						},
@@ -350,11 +329,7 @@ async function poll(): Promise<void> {
 						async () => {
 							await runOfficialHistoryIncrementalSync({
 								reason: "round-complete",
-								lookbackRounds:
-									Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
-									HISTORY_SYNC_LOOKBACK_ROUNDS > 0
-										? HISTORY_SYNC_LOOKBACK_ROUNDS
-										: 3,
+								lookbackRounds: resolveHistorySyncLookbackRounds(),
 								targetRoundId: activeRound.id,
 							});
 						},
@@ -370,11 +345,7 @@ async function poll(): Promise<void> {
 					await safeHistorySyncRun("match-complete", async () => {
 						await runOfficialHistoryIncrementalSync({
 							reason: "match-complete",
-							lookbackRounds:
-								Number.isFinite(HISTORY_SYNC_LOOKBACK_ROUNDS) &&
-								HISTORY_SYNC_LOOKBACK_ROUNDS > 0
-									? HISTORY_SYNC_LOOKBACK_ROUNDS
-									: 3,
+							lookbackRounds: resolveHistorySyncLookbackRounds(),
 							targetRoundId: activeRound.id,
 						});
 					});
